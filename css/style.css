@@ -762,3 +762,317 @@ textarea:focus-visible {
     transition: none;
   }
 }
+/* ==========================================
+   EXPEDIENTE CLÍNICO DIGITAL
+========================================== */
+
+.upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  padding: 30px 20px;
+  border: 2px dashed var(--azul-claro);
+  border-radius: 16px;
+  background: var(--fondo);
+  text-align: center;
+}
+
+.upload-area > i {
+  font-size: 45px;
+  color: var(--azul-claro);
+}
+
+.upload-area h3 {
+  margin: 0;
+  color: var(--azul);
+}
+
+.upload-area p {
+  margin: 0;
+  color: var(--gris);
+  font-size: 14px;
+}
+
+.upload-area input {
+  width: 100%;
+  max-width: 400px;
+  padding: 12px;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--blanco);
+}
+
+.upload-area input::file-selector-button {
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: var(--violeta);
+  color: var(--azul);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* LISTA DE DOCUMENTOS */
+
+.documento-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+.documento-item:last-child {
+  border-bottom: none;
+}
+
+.documento-icono {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--violeta);
+  color: var(--azul);
+  font-size: 24px;
+}
+
+.documento-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.documento-info strong {
+  display: block;
+  color: var(--azul);
+  overflow-wrap: anywhere;
+}
+
+.documento-info small {
+  display: block;
+  margin-top: 7px;
+  color: var(--gris);
+}
+
+.documento-acciones {
+  display: flex;
+  gap: 8px;
+}
+
+.documento-btn {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--fondo);
+  color: var(--azul);
+}
+
+.documento-btn:hover {
+  background: var(--violeta);
+}
+
+.documento-btn.eliminar {
+  background: var(--rojo-claro);
+  color: var(--rojo);
+}
+
+.documento-btn.eliminar:hover {
+  background: #FFE2E7;
+}
+
+#mensajeDocumento {
+  color: var(--azul);
+  text-align: center;
+  font-weight: 600;
+}
+
+/* ADAPTACIÓN PARA CELULARES */
+
+@media (max-width: 480px) {
+
+  .upload-area {
+    padding: 20px 12px;
+  }
+
+  .documento-item {
+    flex-wrap: wrap;
+  }
+
+  .documento-acciones {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .documento-info {
+    font-size: 14px;
+  }
+
+  .documento-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* ==========================================
+   SALUD 360°
+   PERFIL PROFESIONAL
+========================================== */
+
+/* FORMULARIO DEL PERFIL */
+
+#formPerfil {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+#formPerfil .form-field {
+  margin-bottom: 0;
+}
+
+#formPerfil label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--azul);
+  font-weight: 600;
+}
+
+#formPerfil input,
+#formPerfil textarea {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--blanco);
+  color: var(--texto);
+  font: inherit;
+}
+
+#formPerfil input:focus,
+#formPerfil textarea:focus {
+  outline: 2px solid var(--azul-claro);
+  outline-offset: 2px;
+}
+
+#formPerfil input[readonly] {
+  background: var(--fondo);
+  color: #64748B;
+  cursor: default;
+}
+
+#formPerfil textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* TARJETAS COMPLEMENTARIAS */
+
+.perfil-complementos {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* FOTOGRAFÍA */
+
+.perfil-foto-contenedor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  text-align: center;
+}
+
+.perfil-foto-grande {
+  width: 115px;
+  height: 115px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--violeta);
+  color: var(--azul);
+  border: 4px solid var(--blanco);
+  box-shadow: 0 4px 15px rgba(13, 59, 102, .12);
+  font-size: 36px;
+  font-weight: 700;
+}
+
+/* ESTADO DE LA CUENTA */
+
+.perfil-estado {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.perfil-estado p {
+  margin: 0;
+  padding: 12px;
+  background: var(--fondo);
+  border-radius: 10px;
+  color: var(--texto);
+}
+
+.perfil-estado strong {
+  color: var(--azul);
+}
+
+/* MENSAJES DEL FORMULARIO */
+
+#mensajePerfil {
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.perfil-exito {
+  padding: 12px;
+  background: #E8F7EF;
+  color: #166534;
+  border-radius: 10px;
+}
+
+.perfil-error {
+  padding: 12px;
+  background: #FFF1F3;
+  color: #B91C1C;
+  border-radius: 10px;
+}
+
+/* BOTONES DESHABILITADOS */
+
+.perfil-complementos button:disabled,
+#formPerfil button:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+/* DISEÑO RESPONSIVO */
+
+@media (max-width: 760px) {
+
+  .perfil-complementos {
+    gap: 15px;
+  }
+
+  .perfil-foto-grande {
+    width: 95px;
+    height: 95px;
+    font-size: 30px;
+  }
+
+  #formPerfil input,
+  #formPerfil textarea {
+    font-size: 16px;
+  }
+
+  #formPerfil .btn {
+    width: 100%;
+  }
+}

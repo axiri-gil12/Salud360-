@@ -1,286 +1,197 @@
-/* ==========================================
-   SALUD 360°
-   SERVICE WORKER v9
+/*En todas las estrategias, el primer paso es subir a cache archivos
+elegidos como necesarios, la elección depende del proyecto y sus necesidades
+de carga sin conexión a interner*/ 
 
-   Estrategia:
-   Network with Cache Fallback
-========================================== */
+//CONSTANTES DE ALMACENAMIENTO CACHE
+const CACHE ='salud360-cache-2';
+const CACHE_DINAMICO ='salud360-dinamico-2';
+const CACHE_ESTATICO ='salud360-estatico-2';
+const CACHE_INMUTABLE ='salud360-inmutable-2';
 
-/* 1. CONFIGURACIÓN */
 
-const VERSION = "v9";
+/***********************INSTALACIÓN ************************
+Indicamos que durante el proceso de instalación se registren 
+los archivos base en cache acorde a su tipo
+************************************************************/
 
-const PREFIJO = "salud360-demo-";
+self.addEventListener('install', evento=>{
+    /*Promesa que crea el proceso de creación del espacio 
+    en cache y agrega los archivos necesarios para cargar nuestra
+    aplicación*/
+    const cacheBase = caches.open(CACHE)
+        .then(cache=>{
+            return cache.addAll([
+                './',
+                './index.html',
+                './login.html',
+                './registro.html',
+                './offline.html',
+                './css/style.css',
+                './js/app.js',
+                './js/firebase.js',
+                './js/auth.js',
+                './manifest.json'
+            ]);
+        });
 
-const CACHE_ESTATICO =
-  `${PREFIJO}estatico-${VERSION}`;
+        //Separamos los archivos que no se modificarán en un espacio de cache inmutable
+        const cacheInmutable = caches.open(CACHE_INMUTABLE)
+            .then(cache=>{
+                return cache.add(
+                    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css'
+                ).catch(()=>{});
+            });
 
-const CACHE_DINAMICO =
-  `${PREFIJO}dinamico-${VERSION}`;
+            //Indicamos que la instalación espere hasta que las promesas se cumplan
+        evento.waitUntil(
+            Promise.all([cacheBase, cacheInmutable])
+                .then(()=>self.skipWaiting())
+        );
+});
 
-const OFFLINE = "./offline.html";
 
-/* 2. ARCHIVOS ESENCIALES */
+/******************* FUNCIÓN DE LIMPIEZA DE CACHE ********************
+/*Debemos mantener un número limitado e archivos para no sobrepasar el
+espacio de almacenamiento cache, por ello se crea está función.
+**********************************************************************/
 
-const ARCHIVOS = [
-  "./offline.html",
-  "./index.html",
-  "./login.html",
-  "./registro.html",
-  "./css/style.css",
-  "./js/app.js",
-  "./js/auth.js",
-  "./js/firebase.js",
-  "./manifest.json"
-];
+//recibimos el nombre del espacio de cache a limpiar y el número de archivos permitido
+function limpiarCache(nombreCache, numeroItems){
+    //abrimos el cache
+    return caches.open(nombreCache)
+        .then(cache=>{
+            //recuperamos el arreglo de archivos existentes en el espacio de cache
+            return cache.keys()
+                .then(keys=>{
+                    //si el número de archivos supera el limite permitido
+                    if (keys.length>numeroItems){
+                        //eliminamos el más antiguo y repetimos el proceso
+                        return cache.delete(keys[0])
+                            .then(()=>limpiarCache(nombreCache, numeroItems));
+                    }
+                });
+        });
+}
 
-/* 3. ICONOS */
 
-const ICONOS = [
-  "./img/imagenes/icons/salud1.png",
-  "./img/imagenes/icons/salud2.png",
-  "./img/imagenes/icons/salud3.png",
-  "./img/imagenes/icons/salud4.png",
-  "./img/imagenes/icons/empresa1.png",
-  "./img/imagenes/icons/empresa2.png",
-  "./img/imagenes/icons/empresa3.png",
-  "./img/imagenes/icons/empresa4.png"
-];
+/************************ ESTRATEGÍA 3  *****************************
+                   NETWORK WITH CACHE FALLBACK 
+Este modo de manejar el cache, implica que cuando se realiza una petición, 
+primero se busque en la web y si no existe se dirija a buscar en cache.
+***********************************************************************/
 
-/* 4. RECURSOS PÚBLICOS PERMITIDOS */
+self.addEventListener('fetch', evento =>{
 
-const RECURSOS_PUBLICOS = new Set(
+    if (evento.request.method !== 'GET') return;
 
-  [...ARCHIVOS, ...ICONOS].map(ruta =>
+    const url = new URL(evento.request.url);
 
-    new URL(ruta, self.registration.scope).href
+    const archivosPublicos = [
+        './',
+        './index.html',
+        './login.html',
+        './registro.html',
+        './offline.html',
+        './css/style.css',
+        './js/app.js',
+        './js/firebase.js',
+        './js/auth.js',
+        './manifest.json'
+    ].map(archivo => new URL(archivo, self.registration.scope).href);
 
-  )
+    const esPublico = archivosPublicos.includes(url.href);
 
-);
+    const esInmutable = url.href ===
+        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css';
 
-/* 5. INSTALACIÓN */
+    if (!esPublico && !esInmutable){
 
-self.addEventListener("install", event => {
-
-  event.waitUntil(
-
-    (async () => {
-
-      const cache =
-        await caches.open(CACHE_ESTATICO);
-
-      // Los archivos esenciales deben existir.
-      await cache.addAll(ARCHIVOS);
-
-      // Los iconos son recursos opcionales.
-      await Promise.all(
-
-        ICONOS.map(async icono => {
-
-          try {
-
-            await cache.add(icono);
-
-          } catch (error) {
-
-            console.warn(
-              "Icono no disponible:",
-              icono
+        if (evento.request.mode === 'navigate'){
+            evento.respondWith(
+                fetch(evento.request)
+                    .catch(()=>caches.match('./offline.html'))
             );
+        }
 
-          }
+        return;
+    }
 
-        })
+   //Procesamos las peticiones del sitio a través del servidor (fetch)
+    const respuesta = fetch(evento.request)
+        .then(async resp=>{
 
-      );
+            if (resp.ok && !resp.redirected){
 
-      console.log(
-        "Salud 360°: caché estático creado"
-      );
+                const copia = resp.clone();
 
-      await self.skipWaiting();
+                try {
 
-    })()
+                    //subimos el archivo recuperado a cache
+                    const cache = await caches.open(CACHE_DINAMICO);
 
-  );
+                    await cache.put(evento.request,copia);
 
-});
+                    //Limpiamos el cache dinámico
+                    await limpiarCache(CACHE_DINAMICO,50);
 
-/* 6. ACTIVACIÓN */
-
-self.addEventListener("activate", event => {
-
-  event.waitUntil(
-
-    (async () => {
-
-      const claves = await caches.keys();
-
-      // Eliminar versiones anteriores del proyecto.
-      await Promise.all(
-
-        claves
-
-          .filter(clave =>
-
-            clave.startsWith(PREFIJO) &&
-
-            clave !== CACHE_ESTATICO &&
-
-            clave !== CACHE_DINAMICO
-
-          )
-
-          .map(clave => caches.delete(clave))
-
-      );
-
-      // Crear el espacio de caché dinámico.
-      await caches.open(CACHE_DINAMICO);
-
-      await self.clients.claim();
-
-      console.log(
-        "Salud 360°: Service Worker v9 activo"
-      );
-
-    })()
-
-  );
-
-});
-
-/* 7. INTERCEPTAR SOLICITUDES */
-
-self.addEventListener("fetch", event => {
-
-  const request = event.request;
-
-  const url = new URL(request.url);
-
-  // Solo solicitudes GET.
-  if (request.method !== "GET") return;
-
-  // No interceptar servicios externos.
-  if (url.origin !== self.location.origin) return;
-
-  // Excluir rutas reservadas de Firebase.
-  if (url.pathname.includes("/__/")) return;
-
-  // Excluir la comprobación de conexión.
-  if (url.searchParams.has("conexion")) return;
-
-  /* 8. NAVEGACIÓN ENTRE PÁGINAS */
-
-  if (request.mode === "navigate") {
-
-    event.respondWith(
-
-      (async () => {
-
-        try {
-
-          // Intentar cargar la página desde la red.
-          return await fetch(request);
-
-        } catch (error) {
-
-          // Mostrar la página offline.
-          const cache =
-            await caches.open(CACHE_ESTATICO);
-
-          const paginaOffline =
-            await cache.match(OFFLINE);
-
-          return paginaOffline || new Response(
-
-            "Salud 360°: Sin conexión a internet.",
-
-            {
-              status: 503,
-              headers: {
-                "Content-Type":
-                  "text/plain; charset=UTF-8"
-              }
+                } catch(error){
+                    console.error('Error al guardar en cache:',error);
+                }
             }
 
-          );
+            //retornamos la respuesta de la web
+            return resp;   
 
-        }
+        }).catch(async ()=>{
+            //si no se puede recuperar de la web se busca en cache (match)
+            const cache = await caches.open(CACHE_DINAMICO);
 
-      })()
+            const archivo = await cache.match(evento.request)
+                || await caches.match(evento.request);
 
+            if (archivo) return archivo;
+
+            if (evento.request.mode === 'navigate'){
+                const offline = await caches.match('./offline.html');
+
+                if (offline) return offline;
+            }
+
+            return new Response('Sin conexión a internet',{
+                status: 503,
+                statusText: 'Service Unavailable'
+            });
+        });
+
+        //retornamos la respuesta recuperada
+        evento.respondWith(respuesta);
+
+});
+
+
+/*********************** ACTIVACIÓN ************************
+Eliminamos las versiones anteriores de cache de la aplicación.
+************************************************************/
+
+self.addEventListener('activate', evento=>{
+
+    const cachesPermitidos = [
+        CACHE,
+        CACHE_DINAMICO,
+        CACHE_ESTATICO,
+        CACHE_INMUTABLE
+    ];
+
+    evento.waitUntil(
+        caches.keys()
+            .then(keys=>{
+                return Promise.all(
+                    keys.filter(key=>
+                        key.startsWith('salud360-') &&
+                        !cachesPermitidos.includes(key)
+                    ).map(key=>caches.delete(key))
+                );
+            })
+            .then(()=>self.clients.claim())
     );
-
-    return;
-
-  }
-
-  /* 9. PROTEGER DATOS PRIVADOS */
-
-  // Solo almacenar archivos públicos conocidos.
-  if (!RECURSOS_PUBLICOS.has(url.href)) return;
-
-  /* 10. NETWORK WITH CACHE FALLBACK */
-
-  event.respondWith(
-
-    (async () => {
-
-      try {
-
-        // Consultar primero la red.
-        const respuesta = await fetch(request);
-
-        if (respuesta.ok) {
-
-          const cache =
-            await caches.open(CACHE_DINAMICO);
-
-          await cache.put(
-            request,
-            respuesta.clone()
-          );
-
-        }
-
-        return respuesta;
-
-      } catch (error) {
-
-        // Buscar primero en el caché dinámico.
-        const dinamico =
-          await caches.open(CACHE_DINAMICO);
-
-        const recursoDinamico =
-          await dinamico.match(request);
-
-        if (recursoDinamico) {
-
-          return recursoDinamico;
-
-        }
-
-        // Buscar en el caché estático.
-        const estatico =
-          await caches.open(CACHE_ESTATICO);
-
-        const recursoEstatico =
-          await estatico.match(request);
-
-        if (recursoEstatico) {
-
-          return recursoEstatico;
-
-        }
-
-        return Response.error();
-
-      }
-
-    })()
-
-  );
-
 });

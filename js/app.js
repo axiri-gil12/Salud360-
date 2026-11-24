@@ -35,6 +35,16 @@ let usuario = {
   rol: ""
 };
 
+/* IMPORTAR ALMACENAMIENTO LOCAL */
+
+import {
+  guardarDocumento,
+  obtenerDocumentos,
+  obtenerDocumento,
+  eliminarDocumento,
+  formatoPeso
+} from "./archivos.js";
+
 /* UTILIDADES */
 
 function escapar(valor) {
@@ -283,64 +293,184 @@ function directorio() {
 
 /* EXPEDIENTE */
 
+/* EXPEDIENTE */
+
 function expediente() {
+
   page.innerHTML = `
     ${encabezado(
       "Expediente Clínico Digital",
-      "Información y documentos médicos"
+      "Administración de documentos"
     )}
 
     <div class="notice">
-      Esta sección utiliza información de demostración.
-      No ingreses datos clínicos reales.
+      Utiliza únicamente documentos ficticios.
+      Los archivos se guardan en este navegador.
     </div>
 
-    <div class="two-grid">
-      ${tarjeta("Información médica", `
-        <p>
-          Aquí se mostrarán los datos clínicos
-          autorizados del paciente.
-        </p>
-      `)}
+    <article class="card">
 
-      ${tarjeta("Documentos", `
-        <p>
-          Resultados de laboratorio, estudios,
-          recetas y archivos médicos.
-        </p>
-        ${boton("Ir a mi perfil", "perfil")}
-      `)}
-    </div>
+      <h2>Subir documento</h2>
+
+      <form id="formDocumento">
+
+        <div class="upload-area">
+
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+
+          <h3>Seleccionar documento</h3>
+
+          <p>PDF, JPG o PNG. Máximo 5 MB.</p>
+
+          <input
+            type="file"
+            id="documentoClinico"
+            accept=".pdf,.jpg,.jpeg,.png"
+            aria-label="Seleccionar documento"
+            required>
+
+          <button
+            type="submit"
+            class="btn primary">
+
+            Guardar documento
+
+          </button>
+
+        </div>
+
+        <p id="mensajeDocumento"
+           role="status"
+           aria-live="polite"></p>
+
+      </form>
+
+    </article>
+
+    <article class="card section-space">
+
+      <h2>Mis documentos</h2>
+
+      <div id="listaDocumentos">
+
+        <p>Cargando documentos...</p>
+
+      </div>
+
+    </article>
   `;
+
+  cargarDocumentos();
 }
 
-/* MÉDICOS Y PACIENTES */
+/* CARGAR DOCUMENTOS */
 
-function vinculos() {
-  const medico = rolActual === "medico";
+async function cargarDocumentos() {
 
-  page.innerHTML = `
-    ${encabezado(
-      medico ? "Mis Pacientes" : "Mis Médicos",
-      "Conexiones entre médicos y pacientes"
-    )}
+  const contenedor =
+    document.getElementById("listaDocumentos");
 
-    ${tarjeta(
-      medico ? "Pacientes registrados" : "Buscar médicos",
-      `
-        <p>
-          ${medico
-            ? "Aquí podrás revisar solicitudes y pacientes vinculados."
-            : "Aquí podrás buscar médicos y solicitar una vinculación."}
-        </p>
-        <span class="pill">
-          Pendiente de conexión con Firebase
-        </span>
-      `
-    )}
-  `;
+  if (!contenedor || !uidActual) return;
+
+  const uid = uidActual;
+
+  try {
+
+    const documentos =
+      await obtenerDocumentos(uid);
+
+    if (uidActual !== uid ||
+        !contenedor.isConnected) return;
+
+    if (documentos.length === 0) {
+
+      contenedor.innerHTML = `
+        <div class="empty-state">
+          Todavía no tienes documentos guardados.
+        </div>
+      `;
+
+      return;
+    }
+
+    contenedor.innerHTML = documentos.map(doc => `
+
+      <div class="documento-item">
+
+        <div class="documento-icono">
+
+          <i class="fa-solid ${
+            doc.tipo === "application/pdf"
+              ? "fa-file-pdf"
+              : "fa-file-image"
+          }"></i>
+
+        </div>
+
+        <div class="documento-info">
+
+          <strong>${escapar(doc.nombre)}</strong>
+
+          <small>
+            ${formatoPeso(doc.peso)}
+            |
+            ${escapar(
+              new Date(doc.fecha)
+                .toLocaleDateString("es-MX")
+            )}
+          </small>
+
+        </div>
+
+        <div class="documento-acciones">
+
+          <button
+            type="button"
+            class="documento-btn"
+            data-documento="ver"
+            data-id="${doc.id}"
+            aria-label="Ver documento">
+
+            <i class="fa-solid fa-eye"></i>
+
+          </button>
+
+          <button
+            type="button"
+            class="documento-btn"
+            data-documento="descargar"
+            data-id="${doc.id}"
+            aria-label="Descargar documento">
+
+            <i class="fa-solid fa-download"></i>
+
+          </button>
+
+          <button
+            type="button"
+            class="documento-btn eliminar"
+            data-documento="eliminar"
+            data-id="${doc.id}"
+            aria-label="Eliminar documento">
+
+            <i class="fa-solid fa-trash"></i>
+
+          </button>
+
+        </div>
+
+      </div>
+
+    `).join("");
+
+  } catch (error) {
+
+    console.error(error);
+
+    contenedor.textContent =
+      "No se pudieron cargar los documentos.";
+  }
 }
-
 /* CHAT */
 
 function chat() {
@@ -439,77 +569,281 @@ function mostrarProductos(busqueda) {
   `;
 }
 
-/* PERFIL */
+/* PERFIL PROFESIONAL */
 
 function perfil() {
+
   const medico = rolActual === "medico";
 
+  const verificado = usuario.verificado === true;
+
+  const soloLectura = verificado ? "readonly" : "";
+
   page.innerHTML = `
+
     ${encabezado(
       medico ? "Perfil Profesional" : "Mi Perfil",
-      "Datos personales y configuración"
+      "Administra tu información y configuración"
     )}
 
     <section class="profile-banner">
+
       <div class="profile-photo">
         ${escapar(usuario.iniciales)}
       </div>
 
       <div>
+
         <h2>${escapar(usuario.nombre)}</h2>
-        <p>${medico ? "Médico" : "Paciente"}</p>
-        <span class="pill">Perfil de demostración</span>
+
+        <p>
+          ${medico
+            ? escapar(usuario.especialidad || "Médico")
+            : "Paciente"}
+        </p>
+
+        <span class="pill">
+          ${medico
+            ? verificado
+              ? "Profesional verificado"
+              : "Verificación pendiente"
+            : "Perfil de demostración"}
+        </span>
+
       </div>
+
     </section>
 
     <div class="two-grid section-space">
-      ${tarjeta("Datos personales", `
+
+      ${tarjeta(
+        medico ? "Información profesional" : "Datos personales",
+        `
+
         <form id="formPerfil">
+
           <div class="form-field">
+
             <label for="nombrePerfil">
               Nombre completo
             </label>
 
-            <input id="nombrePerfil"
-                   value="${escapar(usuario.nombre)}"
-                   maxlength="100"
-                   autocomplete="name"
-                   required>
+            <input
+              id="nombrePerfil"
+              value="${escapar(usuario.nombre)}"
+              maxlength="100"
+              required>
+
           </div>
 
-          <button class="btn primary" type="submit">
-            Guardar nombre
+          <div class="form-field">
+
+            <label for="correoPerfil">
+              Correo electrónico
+            </label>
+
+            <input
+              id="correoPerfil"
+              type="email"
+              value="${escapar(usuario.correo)}"
+              readonly>
+
+          </div>
+
+          ${medico ? `
+
+            <div class="form-field">
+
+              <label for="especialidadPerfil">
+                Especialidad
+              </label>
+
+              <input
+                id="especialidadPerfil"
+                value="${escapar(usuario.especialidad)}"
+                maxlength="100"
+                ${soloLectura}
+                required>
+
+            </div>
+
+            <div class="form-field">
+
+              <label for="cedulaPerfil">
+                Cédula profesional
+              </label>
+
+              <input
+                id="cedulaPerfil"
+                value="${escapar(usuario.cedula)}"
+                maxlength="30"
+                ${soloLectura}
+                required>
+
+            </div>
+
+            <div class="form-field">
+
+              <label for="telefonoPerfil">
+                Teléfono profesional
+              </label>
+
+              <input
+                id="telefonoPerfil"
+                type="tel"
+                value="${escapar(usuario.telefono)}"
+                maxlength="20"
+                placeholder="Teléfono de demostración">
+
+            </div>
+
+            <div class="form-field">
+
+              <label for="consultorioPerfil">
+                Consultorio
+              </label>
+
+              <input
+                id="consultorioPerfil"
+                value="${escapar(usuario.consultorio)}"
+                maxlength="200"
+                placeholder="Ubicación del consultorio">
+
+            </div>
+
+            <div class="form-field">
+
+              <label for="experienciaPerfil">
+                Años de experiencia
+              </label>
+
+              <input
+                id="experienciaPerfil"
+                type="number"
+                min="0"
+                max="80"
+                step="1"
+                value="${escapar(usuario.experiencia ?? 0)}"
+                required>
+
+            </div>
+
+            <div class="form-field">
+
+              <label for="descripcionPerfil">
+                Descripción profesional
+              </label>
+
+              <textarea
+                id="descripcionPerfil"
+                rows="5"
+                maxlength="1000"
+                placeholder="Describe tus servicios profesionales"
+              >${escapar(usuario.descripcion)}</textarea>
+
+            </div>
+
+          ` : ""}
+
+          <button class="btn primary full"
+                  type="submit">
+
+            <i class="fa-solid fa-floppy-disk"></i>
+            Guardar cambios
+
           </button>
+
+          <p id="mensajePerfil"
+             role="status"
+             aria-live="polite"></p>
+
         </form>
+
       `)}
 
-      ${tarjeta("Fotografía y documentos", `
-        <div class="form-field">
-          <label for="fotoPerfil">
-            Fotografía de perfil
-          </label>
+      <div class="perfil-complementos">
 
-          <input type="file"
-                 id="fotoPerfil"
-                 accept="image/png,image/jpeg,image/webp">
-        </div>
+        ${tarjeta("Fotografía de perfil", `
 
-        <div class="form-field">
-          <label for="archivoPerfil">
-            Documento
-          </label>
+          <div class="perfil-foto-contenedor">
 
-          <input type="file"
-                 id="archivoPerfil"
-                 accept=".pdf,.png,.jpg,.jpeg">
-        </div>
+            <div class="perfil-foto-grande">
+              ${escapar(usuario.iniciales)}
+            </div>
 
-        <p class="demo-note">
-          Los archivos no se subirán hasta conectar
-          Firebase Storage. No selecciones documentos reales.
-        </p>
-      `)}
+            <p>Almacenamiento pendiente</p>
+
+            <button
+              class="btn primary full"
+              type="button"
+              disabled>
+
+              <i class="fa-solid fa-camera"></i>
+              Cambiar fotografía
+
+            </button>
+
+          </div>
+
+          <p class="demo-note">
+            La carga de fotografías se habilitará
+            en una etapa posterior.
+          </p>
+
+        `)}
+
+        ${tarjeta("Estado de la cuenta", `
+
+          <div class="perfil-estado">
+
+            <p>
+              <strong>Tipo de usuario:</strong>
+              ${medico ? "Médico" : "Paciente"}
+            </p>
+
+            <p>
+              <strong>Modalidad:</strong>
+              Demostración
+            </p>
+
+            ${medico ? `
+
+              <p>
+                <strong>Verificación:</strong>
+                ${verificado ? "Verificado" : "Pendiente"}
+              </p>
+
+            ` : ""}
+
+          </div>
+
+          <p class="demo-note">
+            Utiliza únicamente información ficticia.
+          </p>
+
+        `)}
+
+        ${tarjeta("Documentos", `
+
+          <p>
+            Consulta el apartado de expediente clínico.
+          </p>
+
+          ${boton(
+            "Ir al expediente clínico",
+            "expediente"
+          )}
+
+          <p class="demo-note">
+            El almacenamiento de archivos está pendiente.
+          </p>
+
+        `)}
+
+      </div>
+
     </div>
+
   `;
 }
 
@@ -632,49 +966,306 @@ document.addEventListener("input", evento => {
 /* GUARDAR PERFIL */
 
 document.addEventListener("submit", async evento => {
+
   if (evento.target.id !== "formPerfil") return;
 
   evento.preventDefault();
 
-  const campo = document.getElementById("nombrePerfil");
-  const nombre = campo?.value.trim();
+  if (!sesionLista || !uidActual) return;
 
-  if (!nombre || !uidActual) {
-    alert("Ingresa un nombre válido.");
+  const formulario = evento.target;
+
+  const uid = uidActual;
+
+  const mensaje =
+    formulario.querySelector("#mensajePerfil");
+
+  const botonGuardar =
+    formulario.querySelector('[type="submit"]');
+
+  const nombre =
+    formulario.querySelector("#nombrePerfil").value.trim();
+
+  if (!nombre) {
+
+    mensaje.textContent = "Ingresa un nombre válido.";
+
     return;
   }
 
-  const botonGuardar = evento.target.querySelector(
-    '[type="submit"]'
-  );
+  // DATOS QUE SE ACTUALIZARÁN
 
-  if (botonGuardar) botonGuardar.disabled = true;
+  const datos = {
+    nombre
+  };
 
-  try {
-    await updateDoc(
-      doc(db, "usuarios", uidActual),
-      { nombre }
-    );
+  // CAMPOS EXCLUSIVOS DEL MÉDICO
 
-    usuario.nombre = nombre;
-    usuario.iniciales = obtenerIniciales(nombre);
+  if (rolActual === "medico") {
 
-    if (profileShortcut) {
-      profileShortcut.textContent = usuario.iniciales;
+    if (!usuario.verificado) {
+
+      datos.especialidad =
+        formulario.querySelector("#especialidadPerfil")
+          .value.trim();
+
+      datos.cedula =
+        formulario.querySelector("#cedulaPerfil")
+          .value.trim();
+
+      if (!datos.especialidad || !datos.cedula) {
+
+        mensaje.textContent =
+          "Completa la especialidad y la cédula.";
+
+        return;
+      }
     }
 
-    perfil();
+    datos.telefono =
+      formulario.querySelector("#telefonoPerfil")
+        .value.trim();
 
-    alert("Nombre guardado correctamente.");
+    datos.consultorio =
+      formulario.querySelector("#consultorioPerfil")
+        .value.trim();
 
-  } catch (error) {
-    console.error("Error al guardar perfil:", error);
-
-    alert(
-      "No se pudo guardar. Revisa los permisos de Firestore."
+    datos.experiencia = Number(
+      formulario.querySelector("#experienciaPerfil").value
     );
 
-    if (botonGuardar) botonGuardar.disabled = false;
+    datos.descripcion =
+      formulario.querySelector("#descripcionPerfil")
+        .value.trim();
+
+    if (!Number.isInteger(datos.experiencia)
+        || datos.experiencia < 0
+        || datos.experiencia > 80) {
+
+      mensaje.textContent =
+        "Ingresa un número válido de años de experiencia.";
+
+      return;
+    }
+  }
+
+  botonGuardar.disabled = true;
+
+  mensaje.textContent = "Guardando información...";
+
+  try {
+
+    // ACTUALIZAR FIRESTORE
+
+    await updateDoc(
+      doc(db, "usuarios", uid),
+      datos
+    );
+
+    // COMPROBAR QUE LA SESIÓN NO CAMBIÓ
+
+    if (uidActual !== uid
+        || auth.currentUser?.uid !== uid
+        || !sesionLista) return;
+
+    // ACTUALIZAR INFORMACIÓN LOCAL
+
+    usuario = {
+      ...usuario,
+      ...datos,
+      iniciales: obtenerIniciales(nombre)
+    };
+
+    // ACTUALIZAR ICONO DEL PERFIL
+
+    if (profileShortcut) {
+
+      profileShortcut.textContent =
+        usuario.iniciales;
+    }
+
+    // ACTUALIZAR INTERFAZ
+
+    if (formulario.isConnected) {
+
+      perfil();
+
+      const mensajeNuevo =
+        document.getElementById("mensajePerfil");
+
+      if (mensajeNuevo) {
+
+        mensajeNuevo.className = "perfil-exito";
+
+        mensajeNuevo.textContent =
+          "Información guardada correctamente.";
+      }
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Error al guardar perfil:",
+      error
+    );
+
+    mensaje.className = "perfil-error";
+
+    mensaje.textContent =
+      error.code === "permission-denied"
+        ? "Revisa los permisos de Firestore."
+        : "No se pudo guardar la información.";
+
+  } finally {
+
+    botonGuardar.disabled = false;
+  }
+
+});
+/* GUARDAR DOCUMENTOS */
+
+document.addEventListener("submit", async evento => {
+
+  if (evento.target.id !== "formDocumento") return;
+
+  evento.preventDefault();
+
+  if (!sesionLista || !uidActual) return;
+
+  const formulario = evento.target;
+
+  const campo =
+    document.getElementById("documentoClinico");
+
+  const mensaje =
+    document.getElementById("mensajeDocumento");
+
+  const archivo = campo.files[0];
+
+  const botonGuardar =
+    formulario.querySelector('[type="submit"]');
+
+  if (!archivo) {
+
+    mensaje.textContent =
+      "Selecciona un documento.";
+
+    return;
+  }
+
+  botonGuardar.disabled = true;
+
+  try {
+
+    await guardarDocumento(uidActual, archivo);
+
+    formulario.reset();
+
+    mensaje.textContent =
+      "Documento guardado correctamente.";
+
+    await cargarDocumentos();
+
+  } catch (error) {
+
+    console.error(error);
+
+    mensaje.textContent = error.message ||
+      "No se pudo guardar el documento.";
+
+  } finally {
+
+    botonGuardar.disabled = false;
+  }
+});
+
+/* ACCIONES DE DOCUMENTOS */
+
+document.addEventListener("click", async evento => {
+
+  const boton = evento.target.closest(
+    "[data-documento]"
+  );
+
+  if (!boton || !sesionLista || !uidActual) return;
+
+  const id = Number(boton.dataset.id);
+  const accion = boton.dataset.documento;
+  const uid = uidActual;
+
+  if (accion === "eliminar") {
+
+    const confirmar = confirm(
+      "¿Deseas eliminar este documento?"
+    );
+
+    if (!confirmar) return;
+  }
+
+  boton.disabled = true;
+
+  try {
+
+    if (accion === "eliminar") {
+
+      await eliminarDocumento(id, uid);
+
+      await cargarDocumentos();
+
+      return;
+    }
+
+    const documento =
+      await obtenerDocumento(id, uid);
+
+    if (!sesionLista || uidActual !== uid) return;
+
+    const url = URL.createObjectURL(
+      documento.archivo
+    );
+
+    if (accion === "ver") {
+
+      const enlace = document.createElement("a");
+
+      enlace.href = url;
+      enlace.target = "_blank";
+      enlace.rel = "noopener noreferrer";
+
+      document.body.appendChild(enlace);
+
+      enlace.click();
+
+      enlace.remove();
+    }
+
+    if (accion === "descargar") {
+
+      const enlace = document.createElement("a");
+
+      enlace.href = url;
+      enlace.download = documento.nombre;
+
+      document.body.appendChild(enlace);
+
+      enlace.click();
+
+      enlace.remove();
+    }
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 60000);
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert("No se pudo realizar la operación.");
+
+  } finally {
+
+    boton.disabled = false;
   }
 });
 
@@ -751,11 +1342,33 @@ onAuthStateChanged(
         "Usuario"
       );
 
-      usuario = {
-        nombre,
-        iniciales: obtenerIniciales(nombre),
-        rol
-      };
+     // CARGAR INFORMACIÓN DEL USUARIO
+
+usuario = {
+
+  nombre,
+
+  iniciales: obtenerIniciales(nombre),
+
+  rol,
+
+  correo: datos.correo || firebaseUser.email || "",
+
+  especialidad: datos.especialidad || "",
+
+  cedula: datos.cedula || "",
+
+  telefono: datos.telefono || "",
+
+  consultorio: datos.consultorio || "",
+
+  experiencia: datos.experiencia ?? 0,
+
+  descripcion: datos.descripcion || "",
+
+  verificado: datos.verificado === true
+
+};
 
       iniciarApp();
 
