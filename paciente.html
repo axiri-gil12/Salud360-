@@ -1,0 +1,82 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paciente | Salud 360°</title>
+  <link rel="stylesheet" href="./css/style.css">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+</head>
+<body data-rol="paciente">
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <img src="./img/Salud.png" class="logo-sidebar"
+             alt="Salud 360°">
+        <div>
+          <h2>SALUD 360°</h2>
+          <small>Portal del Paciente</small>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#inicio" class="nav-link active">
+          <i class="fa-solid fa-house"></i> Inicio
+        </a>
+        <a href="#citas" class="nav-link">
+          <i class="fa-regular fa-calendar-check"></i> Citas Médicas
+        </a>
+        <a href="#directorio" class="nav-link">
+          <i class="fa-solid fa-hospital"></i> Directorio y Seguros
+        </a>
+        <a href="#expediente" class="nav-link">
+          <i class="fa-solid fa-file-medical"></i> Expediente Clínico
+        </a>
+        <a href="#vinculos" class="nav-link">
+          <i class="fa-solid fa-user-doctor"></i> Mis Médicos
+        </a>
+        <a href="#chat" class="nav-link">
+          <i class="fa-regular fa-comments"></i> Chat Médico
+        </a>
+        <a href="#farmacia" class="nav-link">
+          <i class="fa-solid fa-prescription-bottle-medical"></i> Farmacia
+        </a>
+        <a href="#perfil" class="nav-link">
+          <i class="fa-solid fa-user-gear"></i> Perfil y Plan
+        </a>
+      </nav>
+
+      <button id="cerrarSesion" class="logout-button">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        Cerrar sesión
+      </button>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar">
+        <button id="menuToggle" class="menu-toggle"
+                aria-label="Abrir menú">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="topbar-brand">
+          <img src="./img/Salud.png" class="logo-header"
+               alt="Salud 360°">
+          <div>
+            <strong>SALUD 360°</strong>
+            <small>Portal del Paciente</small>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button id="sosButton" class="sos-button">SOS</button>
+          <a href="#perfil" class="avatar" id="avatarUsuario">P</a>
+        </div>
+      </header>
+      <main id="pageContent" class="page-content" hidden></main>
+    </div>
+  </div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0D3B66">
+
+  <title>Salud 360° | Gestión Médica Integral</title>
+
+  <link rel="stylesheet" href="./css/style.css">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png"
+        href="./img/imagenes/icons/salud1.png">
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+</head>
+
+<body>
+  <div id="appScreen" class="app-layout">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <img src="./img/imagenes/icons/salud1.png"
+             alt="Logotipo Salud 360°">
+
+        <div>
+          <h2>SALUD 360°</h2>
+          <small id="sidebarRole">Portal de Salud 360°</small>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" id="mainNav"
+           aria-label="Navegación principal"></nav>
+
+      <div class="sidebar-footer">
+        <button id="logoutButton"
+                class="btn logout full"
+                type="button">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          Cerrar sesión
+        </button>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar">
+        <div class="topbar-brand">
+          <button id="menuButton"
+                  class="icon-button"
+                  type="button"
+                  aria-label="Abrir menú"
+                  aria-controls="sidebar"
+                  aria-expanded="false">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+
+          <img src="./img/imagenes/icons/salud1.png"
+               alt="Salud 360°">
+
+          <div>
+            <strong>SALUD 360°</strong>
+            <small id="roleLabel">Portal de Salud 360°</small>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="avatar"
+                  id="profileShortcut"
+                  type="button"
+                  aria-label="Abrir perfil">U</button>
+        </div>
+      </header>
+
+      <main class="page-content" id="pageContent">
+        <p>Cargando Salud 360°...</p>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <meta name="theme-color" content="#0D3B66">
+
+  <title>Sin conexión | Salud 360°</title>
+
+  <link rel="manifest" href="./manifest.json">
+
+  <link rel="icon"
+        type="image/png"
+        href="./img/imagenes/icons/salud1.png">
+
+  <style>
+
+    :root {
+      --azul: #0D3B66;
+      --azul-claro: #238BD3;
+      --violeta: #E9E7FF;
+      --blanco: #FFFFFF;
+      --fondo: #F3F8FC;
+      --texto: #243746;
+      --gris: #64748B;
+      --borde: #DCE5EE;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--fondo);
+      color: var(--texto);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    header {
+      padding: 20px;
+      background: var(--azul);
+      color: var(--blanco);
+      text-align: center;
+    }
+
+    header h2 {
+      margin: 0 0 8px;
+    }
+
+    header p {
+      margin: 0;
+    }
+
+    .offline-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 100px);
+      padding: 25px;
+    }
+
+    .offline-card {
+      width: 100%;
+      max-width: 450px;
+      padding: 35px;
+      border: 1px solid var(--borde);
+      border-radius: 24px;
+      background: var(--blanco);
+      box-shadow: 0 8px 30px rgba(13,59,102,.10);
+      text-align: center;
+    }
+
+    .logo {
+      width: 85px;
+      height: 85px;
+      object-fit: contain;
+      margin-bottom: 15px;
+    }
+
+    .offline-icon {
+      display: grid;
+      place-items: center;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: var(--violeta);
+      color: var(--azul);
+    }
+
+    h1 {
+      color: var(--azul);
+      font-size: 26px;
+    }
+
+    p {
+      line-height: 1.6;
+      color: var(--gris);
+    }
+
+    .aviso {
+      margin: 20px 0;
+      padding: 16px;
+      border-radius: 12px;
+      background: var(--violeta);
+      color: var(--azul);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 12px;
+      background: var(--azul);
+      color: var(--blanco);
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: var(--azul-claro);
+    }
+
+    button:focus-visible {
+      outline: 3px solid var(--azul-claro);
+      outline-offset: 3px;
+    }
+
+    .estado {
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--gris);
+    }
+
+    footer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: var(--gris);
+    }
+
+    @media (max-width: 480px) {
+
+      .offline-container {
+        padding: 15px;
+      }
+
+      .offline-card {
+        padding: 25px;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  <header>
+    <h2>SALUD 360°</h2>
+    <p>Gestión Médica Integral</p>
+  </header>
+
+  <main class="offline-container">
+
+    <section class="offline-card">
+
+      <img
+        src="./img/imagenes/icons/salud1.png"
+        alt="Salud 360°"
+        class="logo">
+
+      <div class="offline-icon">
+
+        <svg
+          width="42"
+          height="42"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true">
+
+          <path d="M2 8.8a15 15 0 0 1 20 0"/>
+          <path d="M5 12a10 10 0 0 1 14 0"/>
+          <path d="M8.5 15.5a5 5 0 0 1 7 0"/>
+          <path d="M12 20h.01"/>
+          <path d="M2 2l20 20"/>
+
+        </svg>
+
+      </div>
+
+      <h1>Sin conexión a internet</h1>
+
+      <p>
+        No podemos conectarnos con los servicios
+        de Salud 360° en este momento.
+      </p>
+
+      <div class="aviso">
+        El inicio de sesión, las citas, el chat
+        y los expedientes médicos requieren
+        conexión a internet.
+      </div>
+
+      <button id="reintentar" type="button">
+        Reintentar conexión
+      </button>
+
+      <p id="estado"
+         class="estado"
+         role="status"
+         aria-live="polite">
+
+        Modo sin conexión
+
+      </p>
+
+      <footer>
+        Salud 360° | Modo offline
+      </footer>
+
+    </section>
+
+  </main>
+
+  <script>
+
+    const estado = document.getElementById("estado");
+
+    const boton = document.getElementById("reintentar");
+
+    async function comprobarConexion() {
+
+      boton.disabled = true;
+
+      estado.textContent = "Comprobando conexión...";
+
+      try {
+
+        const respuesta = await fetch(
+          "./manifest.json?conexion=" + Date.now(),
+          { cache: "no-store" }
+        );
+
+        if (!respuesta.ok) {
+          throw new Error("Servidor no disponible");
+        }
+
+        estado.textContent = "Conexión recuperada.";
+
+        window.location.replace("./index.html");
+
+      } catch (error) {
+
+        estado.textContent =
+          "Todavía no hay conexión con el servidor.";
+
+      } finally {
+
+        boton.disabled = false;
+
+      }
+
+    }
+
+    boton.addEventListener(
+      "click",
+      comprobarConexion
+    );
+
+    window.addEventListener("online", () => {
+
+      estado.textContent =
+        "Red detectada. Puedes reintentar la conexión.";
+
+    });
+
+    window.addEventListener("offline", () => {
+
+      estado.textContent =
+        "Modo sin conexión";
+
+    });
+
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,63 @@
+{
+  "name": "Salud 360° - Gestión Médica Integral",
+  "short_name": "Salud 360°",
+  "description": "Aplicación web progresiva de gestión médica integral para pacientes y médicos.",
+  "id": "./index.html",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F3F8FC",
+  "theme_color": "#0D3B66",
+  "lang": "es-MX",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./img/imagenes/icons/salud1.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./img/imagenes/icons/salud2.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./img/imagenes/icons/salud3.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./img/imagenes/icons/salud4.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./img/imagenes/icons/empresa1.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./img/imagenes/icons/empresa2.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./img/imagenes/icons/empresa3.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./img/imagenes/icons/empresa4.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
