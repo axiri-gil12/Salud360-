@@ -17,6 +17,7 @@ import {
   setDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
 /* ELEMENTOS */
 
 const page = document.getElementById("pageContent");
@@ -36,15 +37,43 @@ let usuario = {
   rol: ""
 };
 
-/* IMPORTAR ALMACENAMIENTO LOCAL */
+/* ALMACENAMIENTO DE DOCUMENTOS PENDIENTE */
 
-import {
-  guardarDocumento,
-  obtenerDocumentos,
-  obtenerDocumento,
-  eliminarDocumento,
-  formatoPeso
-} from "./archivos.js";
+async function guardarDocumento() {
+
+  throw new Error(
+    "El almacenamiento de documentos todavía no está habilitado."
+  );
+
+}
+
+async function obtenerDocumentos() {
+
+  return [];
+
+}
+
+async function obtenerDocumento() {
+
+  throw new Error(
+    "El almacenamiento de documentos todavía no está habilitado."
+  );
+
+}
+
+async function eliminarDocumento() {
+
+  throw new Error(
+    "El almacenamiento de documentos todavía no está habilitado."
+  );
+
+}
+
+function formatoPeso(bytes) {
+
+  return (Number(bytes) / 1024).toFixed(2) + " KB";
+
+}
 
 /* UTILIDADES */
 
@@ -189,30 +218,6 @@ function crearMenu() {
     }).join("");
 
 }
-
-function crearMenu() {
-  if (!nav) return;
-
-  nav.innerHTML = menuItems.map(([ruta, icono, nombre]) => {
-    let titulo = nombre;
-
-    if (rolActual === "medico") {
-      if (ruta === "vinculos") titulo = "Mis Pacientes";
-      if (ruta === "citas") titulo = "Agenda Médica";
-      if (ruta === "perfil") titulo = "Perfil Profesional";
-    }
-
-    return `
-      <a href="#${ruta}"
-         class="nav-link"
-         data-nav="${ruta}">
-        <i class="fa-solid fa-${icono}"></i>
-        <span>${titulo}</span>
-      </a>
-    `;
-  }).join("");
-}
-
 /* INICIO PACIENTE */
 
 function inicioPaciente() {
@@ -652,15 +657,15 @@ function inicioMedico() {
 
         </div>
 
-       <a href="#disponibilidad"
-   class="btn primary">
+        <a href="#disponibilidad"
+           class="btn primary">
 
-  <i class="fa-solid fa-calendar-week"
-     aria-hidden="true"></i>
+          <i class="fa-solid fa-calendar-week"
+             aria-hidden="true"></i>
 
-  Configurar disponibilidad
+          Configurar disponibilidad
 
-</a>
+        </a>
 
       </article>
 
@@ -682,7 +687,6 @@ function inicioMedico() {
 
   `;
 }
-
 /* ==========================================
    DISPONIBILIDAD DEL MÉDICO
    SALUD 360°
@@ -1374,7 +1378,6 @@ function citas() {
     </div>
   `;
 }
-
 /* DIRECTORIO */
 
 function directorio() {
@@ -1474,6 +1477,7 @@ function expediente() {
 
   cargarDocumentos();
 }
+
 
 /* CARGAR DOCUMENTOS */
 
@@ -1584,6 +1588,7 @@ async function cargarDocumentos() {
   }
 }
 
+
 /* VINCULACIÓN DE MÉDICOS Y PACIENTES */
 
 function vinculos() {
@@ -1634,6 +1639,7 @@ function vinculos() {
   `;
 }
 
+
 /* CHAT */
 
 function chat() {
@@ -1671,6 +1677,7 @@ function chat() {
     </section>
   `;
 }
+
 
 /* FARMACIA */
 
@@ -1731,7 +1738,6 @@ function mostrarProductos(busqueda) {
     </div>
   `;
 }
-
 /* PERFIL PROFESIONAL */
 
 function perfil() {
@@ -2010,6 +2016,7 @@ function perfil() {
   `;
 }
 
+
 /* NAVEGACIÓN */
 
 const paginas = {
@@ -2039,20 +2046,31 @@ const paginas = {
 
 };
 
+
 function cerrarMenu() {
+
   if (!sidebar) return;
 
   sidebar.classList.remove("open");
 
   if (menuButton) {
-    menuButton.setAttribute("aria-expanded", "false");
+
+    menuButton.setAttribute(
+      "aria-expanded",
+      "false"
+    );
+
   }
+
 }
 
+
 function navegar() {
+
   if (!sesionLista || !page) return;
 
-  const ruta = window.location.hash.replace("#", "") || "inicio";
+  const ruta =
+    window.location.hash.replace("#", "") || "inicio";
 
   const pagina = Object.prototype.hasOwnProperty.call(
     paginas,
@@ -2062,79 +2080,131 @@ function navegar() {
   paginas[pagina]();
 
   document.querySelectorAll("[data-nav]").forEach(enlace => {
+
     enlace.classList.toggle(
       "active",
       enlace.dataset.nav === pagina
     );
+
   });
 
   cerrarMenu();
+
 }
+
 
 /* MENÚ MÓVIL */
 
 if (menuButton && sidebar) {
+
   menuButton.addEventListener("click", () => {
-    const abierto = sidebar.classList.toggle("open");
+
+    const abierto =
+      sidebar.classList.toggle("open");
 
     menuButton.setAttribute(
       "aria-expanded",
       String(abierto)
     );
+
   });
+
 }
+
 
 /* ACCESO AL PERFIL */
 
 if (profileShortcut) {
+
   profileShortcut.addEventListener("click", () => {
+
     if (!sesionLista) return;
 
     if (window.location.hash === "#perfil") {
+
       navegar();
+
     } else {
+
       window.location.hash = "perfil";
+
     }
+
   });
+
 }
+
 
 /* CERRAR SESIÓN */
 
 async function cerrarSesion() {
+
   const confirmar = window.confirm(
     "¿Deseas cerrar tu sesión?"
   );
 
   if (!confirmar) return;
 
-  if (logoutButton) logoutButton.disabled = true;
+  if (logoutButton) {
+
+    logoutButton.disabled = true;
+
+  }
 
   try {
+
     await signOut(auth);
+
     window.location.replace("./login.html");
 
   } catch (error) {
-    console.error("Error al cerrar sesión:", error);
+
+    console.error(
+      "Error al cerrar sesión:",
+      error
+    );
 
     alert("No se pudo cerrar la sesión.");
 
-    if (logoutButton) logoutButton.disabled = false;
+    if (logoutButton) {
+
+      logoutButton.disabled = false;
+
+    }
+
   }
+
 }
 
+
 if (logoutButton) {
-  logoutButton.addEventListener("click", cerrarSesion);
+
+  logoutButton.addEventListener(
+    "click",
+    cerrarSesion
+  );
+
 }
+
 
 /* EVENTOS */
 
-window.addEventListener("hashchange", navegar);
+window.addEventListener(
+  "hashchange",
+  navegar
+);
+
 
 document.addEventListener("input", evento => {
+
   if (evento.target.id === "buscarProducto") {
+
     mostrarProductos(evento.target.value);
+
   }
+
 });
+
 
 /* GUARDAR PERFIL */
 
@@ -2164,6 +2234,7 @@ document.addEventListener("submit", async evento => {
     mensaje.textContent = "Ingresa un nombre válido.";
 
     return;
+
   }
 
   // DATOS QUE SE ACTUALIZARÁN
@@ -2192,7 +2263,9 @@ document.addEventListener("submit", async evento => {
           "Completa la especialidad y la cédula.";
 
         return;
+
       }
+
     }
 
     datos.telefono =
@@ -2219,7 +2292,9 @@ document.addEventListener("submit", async evento => {
         "Ingresa un número válido de años de experiencia.";
 
       return;
+
     }
+
   }
 
   botonGuardar.disabled = true;
@@ -2244,9 +2319,12 @@ document.addEventListener("submit", async evento => {
     // ACTUALIZAR INFORMACIÓN LOCAL
 
     usuario = {
+
       ...usuario,
       ...datos,
+
       iniciales: obtenerIniciales(nombre)
+
     };
 
     // ACTUALIZAR ICONO DEL PERFIL
@@ -2255,6 +2333,7 @@ document.addEventListener("submit", async evento => {
 
       profileShortcut.textContent =
         usuario.iniciales;
+
     }
 
     // ACTUALIZAR INTERFAZ
@@ -2272,7 +2351,9 @@ document.addEventListener("submit", async evento => {
 
         mensajeNuevo.textContent =
           "Información guardada correctamente.";
+
       }
+
     }
 
   } catch (error) {
@@ -2292,9 +2373,12 @@ document.addEventListener("submit", async evento => {
   } finally {
 
     botonGuardar.disabled = false;
+
   }
 
 });
+
+
 /* GUARDAR DOCUMENTOS */
 
 document.addEventListener("submit", async evento => {
@@ -2324,6 +2408,7 @@ document.addEventListener("submit", async evento => {
       "Selecciona un documento.";
 
     return;
+
   }
 
   botonGuardar.disabled = true;
@@ -2349,8 +2434,11 @@ document.addEventListener("submit", async evento => {
   } finally {
 
     botonGuardar.disabled = false;
+
   }
+
 });
+
 
 /* ACCIONES DE DOCUMENTOS */
 
@@ -2363,7 +2451,9 @@ document.addEventListener("click", async evento => {
   if (!boton || !sesionLista || !uidActual) return;
 
   const id = Number(boton.dataset.id);
+
   const accion = boton.dataset.documento;
+
   const uid = uidActual;
 
   if (accion === "eliminar") {
@@ -2373,6 +2463,7 @@ document.addEventListener("click", async evento => {
     );
 
     if (!confirmar) return;
+
   }
 
   boton.disabled = true;
@@ -2386,6 +2477,7 @@ document.addEventListener("click", async evento => {
       await cargarDocumentos();
 
       return;
+
     }
 
     const documento =
@@ -2402,7 +2494,9 @@ document.addEventListener("click", async evento => {
       const enlace = document.createElement("a");
 
       enlace.href = url;
+
       enlace.target = "_blank";
+
       enlace.rel = "noopener noreferrer";
 
       document.body.appendChild(enlace);
@@ -2410,6 +2504,7 @@ document.addEventListener("click", async evento => {
       enlace.click();
 
       enlace.remove();
+
     }
 
     if (accion === "descargar") {
@@ -2417,6 +2512,7 @@ document.addEventListener("click", async evento => {
       const enlace = document.createElement("a");
 
       enlace.href = url;
+
       enlace.download = documento.nombre;
 
       document.body.appendChild(enlace);
@@ -2424,10 +2520,13 @@ document.addEventListener("click", async evento => {
       enlace.click();
 
       enlace.remove();
+
     }
 
     setTimeout(() => {
+
       URL.revokeObjectURL(url);
+
     }, 60000);
 
   } catch (error) {
@@ -2439,45 +2538,74 @@ document.addEventListener("click", async evento => {
   } finally {
 
     boton.disabled = false;
+
   }
+
 });
+
 
 /* INICIAR INTERFAZ */
 
 function iniciarApp() {
+
   const etiqueta = rolActual === "medico"
     ? "Portal del Médico"
     : "Portal del Paciente";
 
-  const roleLabel = document.getElementById("roleLabel");
-  const sidebarRole = document.getElementById("sidebarRole");
+  const roleLabel =
+    document.getElementById("roleLabel");
 
-  if (roleLabel) roleLabel.textContent = etiqueta;
-  if (sidebarRole) sidebarRole.textContent = etiqueta;
+  const sidebarRole =
+    document.getElementById("sidebarRole");
+
+  if (roleLabel) {
+
+    roleLabel.textContent = etiqueta;
+
+  }
+
+  if (sidebarRole) {
+
+    sidebarRole.textContent = etiqueta;
+
+  }
 
   if (profileShortcut) {
-    profileShortcut.textContent = usuario.iniciales;
+
+    profileShortcut.textContent =
+      usuario.iniciales;
+
   }
 
   crearMenu();
 
   sesionLista = true;
+
   navegar();
+
 }
+
 
 /* AUTENTICACIÓN Y ROLES */
 
 onAuthStateChanged(
+
   auth,
+
   async firebaseUser => {
+
     sesionLista = false;
 
     if (!firebaseUser) {
+
       window.location.replace("./login.html");
+
       return;
+
     }
 
     try {
+
       uidActual = firebaseUser.uid;
 
       const referencia = doc(
@@ -2489,9 +2617,12 @@ onAuthStateChanged(
       const snapshot = await getDoc(referencia);
 
       if (!snapshot.exists()) {
+
         page.textContent =
           "No se encontró tu perfil en Firestore.";
+
         return;
+
       }
 
       const datos = snapshot.data();
@@ -2502,69 +2633,91 @@ onAuthStateChanged(
         .replace(/[\u0300-\u036f]/g, "");
 
       if (!["paciente", "medico"].includes(rol)) {
+
         page.textContent =
           "El rol de tu cuenta no es válido.";
+
         return;
+
       }
 
       rolActual = rol;
 
       const nombre = String(
+
         datos.nombre ||
         firebaseUser.displayName ||
         "Usuario"
+
       );
 
-     // CARGAR INFORMACIÓN DEL USUARIO
+      // CARGAR INFORMACIÓN DEL USUARIO
 
-usuario = {
+      usuario = {
 
-  nombre,
+        nombre,
 
-  iniciales: obtenerIniciales(nombre),
+        iniciales: obtenerIniciales(nombre),
 
-  rol,
+        rol,
 
-  correo: datos.correo || firebaseUser.email || "",
+        correo: datos.correo || firebaseUser.email || "",
 
-  especialidad: datos.especialidad || "",
+        especialidad: datos.especialidad || "",
 
-  cedula: datos.cedula || "",
+        cedula: datos.cedula || "",
 
-  telefono: datos.telefono || "",
+        telefono: datos.telefono || "",
 
-  consultorio: datos.consultorio || "",
+        consultorio: datos.consultorio || "",
 
-  experiencia: datos.experiencia ?? 0,
+        experiencia: datos.experiencia ?? 0,
 
-  descripcion: datos.descripcion || "",
+        descripcion: datos.descripcion || "",
 
-  verificado: datos.verificado === true
+        verificado: datos.verificado === true
 
-};
+      };
 
       iniciarApp();
 
     } catch (error) {
-      console.error("Error al cargar perfil:", error);
+
+      console.error(
+        "Error al cargar perfil:",
+        error
+      );
 
       page.textContent =
         "No se pudo cargar tu perfil. Revisa Firebase.";
+
     }
+
   },
+
   error => {
-    console.error("Error de sesión:", error);
+
+    console.error(
+      "Error de sesión:",
+      error
+    );
 
     page.textContent =
       "No se pudo verificar la sesión.";
+
   }
+
 );
+
 
 /* SERVICE WORKER */
 
 if ("serviceWorker" in navigator) {
+
   window.addEventListener("load", async () => {
+
     try {
+
       const registro =
         await navigator.serviceWorker.register("./sw.js");
 
@@ -2576,10 +2729,14 @@ if ("serviceWorker" in navigator) {
       await registro.update();
 
     } catch (error) {
+
       console.error(
         "Error al registrar Service Worker:",
         error
       );
+
     }
+
   });
+
 }
