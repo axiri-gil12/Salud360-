@@ -1630,3 +1630,269 @@ textarea:focus-visible {
   }
 
 }
+
+/* ==========================================
+   SALUD 360°
+   DISPONIBILIDAD DEL MÉDICO
+========================================== */
+
+/* BANNER PRINCIPAL */
+
+.disponibilidad-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px;
+  margin-bottom: 24px;
+  border-radius: 18px;
+  background: linear-gradient(
+    120deg,
+    #0D3B66,
+    #238BD3
+  );
+  color: #FFFFFF;
+}
+
+.disponibilidad-banner h2 {
+  margin: 0 0 10px;
+  color: #FFFFFF;
+  font-size: 25px;
+}
+
+.disponibilidad-banner p {
+  margin: 0;
+  color: #FFFFFF;
+  line-height: 1.6;
+}
+
+.disponibilidad-banner > i {
+  font-size: 55px;
+  opacity: .9;
+}
+
+/* DISTRIBUCIÓN PRINCIPAL */
+
+.disponibilidad-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  align-items: start;
+  gap: 22px;
+}
+
+.disponibilidad-grid > * {
+  min-width: 0;
+}
+
+.disponibilidad-lateral {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ESTADO DE DISPONIBILIDAD */
+
+.disponibilidad-estado {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  margin: 20px 0;
+  background: var(--violeta);
+  border-radius: 12px;
+  color: var(--azul);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.disponibilidad-estado input,
+.disponibilidad-dia input {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: var(--azul);
+  cursor: pointer;
+}
+
+/* SUBTÍTULOS */
+
+.disponibilidad-subtitulo {
+  margin: 24px 0 15px;
+  color: var(--azul);
+  font-size: 16px;
+}
+
+/* DÍAS DE ATENCIÓN */
+
+.disponibilidad-dias {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.disponibilidad-dia {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px;
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  color: var(--azul);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.disponibilidad-dia:has(input:checked) {
+  background: var(--violeta);
+  border-color: #C9C5F0;
+}
+
+/* HORARIOS */
+
+.disponibilidad-horas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+#formDisponibilidad input[type="time"],
+#formDisponibilidad select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 12px;
+  border: 1px solid var(--borde);
+  border-radius: 9px;
+  background: var(--blanco);
+  color: var(--texto);
+  font: inherit;
+}
+
+#formDisponibilidad button {
+  margin-top: 18px;
+}
+
+/* RESUMEN SEMANAL */
+
+.disponibilidad-resumen-dia {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--borde);
+  color: var(--azul);
+  font-size: 13px;
+}
+
+.disponibilidad-resumen-dia:last-child {
+  border-bottom: none;
+}
+
+.horario-activo {
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: #E8F7EF;
+  color: #166534;
+  font-size: 12px;
+}
+
+.horario-inactivo {
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--fondo);
+  color: #64748B;
+  font-size: 12px;
+}
+
+/* INFORMACIÓN ADICIONAL */
+
+.disponibilidad-informacion p {
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--fondo);
+  color: var(--azul);
+  font-size: 14px;
+}
+
+/* MENSAJES */
+
+#mensajeDisponibilidad {
+  margin-top: 15px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+#mensajeDisponibilidad:empty {
+  display: none;
+}
+
+.disponibilidad-exito {
+  padding: 12px;
+  background: #E8F7EF;
+  color: #166534;
+  border-radius: 8px;
+}
+
+.disponibilidad-error {
+  padding: 12px;
+  background: var(--rojo-claro);
+  color: var(--rojo);
+  border-radius: 8px;
+}
+
+/* ACCESIBILIDAD */
+
+#formDisponibilidad input:focus-visible,
+#formDisponibilidad select:focus-visible,
+#formDisponibilidad button:focus-visible {
+  outline: 3px solid var(--azul-claro);
+  outline-offset: 3px;
+}
+
+/* DISEÑO RESPONSIVO */
+
+@media (max-width: 900px) {
+
+  .disponibilidad-grid {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+@media (max-width: 760px) {
+
+  .disponibilidad-banner {
+    padding: 20px;
+  }
+
+  .disponibilidad-banner h2 {
+    font-size: 21px;
+  }
+
+  .disponibilidad-banner > i {
+    font-size: 35px;
+  }
+
+  .disponibilidad-grid {
+    gap: 16px;
+  }
+
+}
+
+@media (max-width: 380px) {
+
+  .disponibilidad-dias,
+  .disponibilidad-horas {
+    grid-template-columns: 1fr;
+  }
+
+  .disponibilidad-banner > i {
+    display: none;
+  }
+
+}

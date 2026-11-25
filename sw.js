@@ -2,11 +2,10 @@
 elegidos como necesarios, la elección depende del proyecto y sus necesidades
 de carga sin conexión a interner*/ 
 //CONSTANTES DE ALMACENAMIENTO CACHE
-const CACHE ='salud360-cache-4';
-const CACHE_DINAMICO ='salud360-dinamico-4';
-const CACHE_ESTATICO ='salud360-estatico-4';
-const CACHE_INMUTABLE ='salud360-inmutable-4';
-
+const CACHE ='salud360-cache-5';
+const CACHE_DINAMICO ='salud360-dinamico-5';
+const CACHE_ESTATICO ='salud360-estatico-5';
+const CACHE_INMUTABLE ='salud360-inmutable-5';
 
 /***********************INSTALACIÓN ************************
 Indicamos que durante el proceso de instalación se registren 

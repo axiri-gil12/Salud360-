@@ -13,9 +13,10 @@ import {
 import {
   doc,
   getDoc,
-  updateDoc
+  updateDoc,
+  setDoc,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-
 /* ELEMENTOS */
 
 const page = document.getElementById("pageContent");
@@ -106,18 +107,88 @@ function acceso(icono, titulo, ruta) {
   `;
 }
 
-/* MENÚ */
+/* MENÚ DE NAVEGACIÓN */
 
 const menuItems = [
+
   ["inicio", "house", "Inicio"],
+
+  ["disponibilidad", "calendar-week", "Mi Disponibilidad"],
+
   ["citas", "calendar-check", "Citas Médicas"],
+
   ["directorio", "hospital", "Directorio y Seguros"],
+
   ["expediente", "file-medical", "Expediente Clínico"],
+
   ["vinculos", "user-doctor", "Mis Médicos"],
+
   ["chat", "comments", "Chat Médico"],
+
   ["farmacia", "capsules", "Farmacia"],
+
   ["perfil", "user-gear", "Perfil y Plan"]
+
 ];
+
+/* CREAR MENÚ SEGÚN EL ROL */
+
+function crearMenu() {
+
+  if (!nav) return;
+
+  nav.innerHTML = menuItems
+
+    .filter(([ruta]) => {
+
+      if (ruta === "disponibilidad") {
+
+        return rolActual === "medico";
+
+      }
+
+      return true;
+
+    })
+
+    .map(([ruta, icono, nombre]) => {
+
+      let titulo = nombre;
+
+      if (rolActual === "medico") {
+
+        if (ruta === "vinculos") {
+          titulo = "Mis Pacientes";
+        }
+
+        if (ruta === "citas") {
+          titulo = "Agenda Médica";
+        }
+
+        if (ruta === "perfil") {
+          titulo = "Perfil Profesional";
+        }
+
+      }
+
+      return `
+
+        <a href="#${ruta}"
+           class="nav-link"
+           data-nav="${ruta}">
+
+          <i class="fa-solid fa-${icono}"
+             aria-hidden="true"></i>
+
+          <span>${escapar(titulo)}</span>
+
+        </a>
+
+      `;
+
+    }).join("");
+
+}
 
 function crearMenu() {
   if (!nav) return;
@@ -551,6 +622,12 @@ function inicioMedico() {
           "perfil"
         )}
 
+        ${acceso(
+          "calendar-week",
+          "Mi disponibilidad",
+          "disponibilidad"
+        )}
+
       </div>
 
       <!-- DISPONIBILIDAD MÉDICA -->
@@ -575,13 +652,15 @@ function inicioMedico() {
 
         </div>
 
-        <button type="button"
-                class="btn primary"
-                disabled>
+       <a href="#disponibilidad"
+   class="btn primary">
 
-          Próximamente
+  <i class="fa-solid fa-calendar-week"
+     aria-hidden="true"></i>
 
-        </button>
+  Configurar disponibilidad
+
+</a>
 
       </article>
 
@@ -602,6 +681,666 @@ function inicioMedico() {
     </div>
 
   `;
+}
+
+/* ==========================================
+   DISPONIBILIDAD DEL MÉDICO
+   SALUD 360°
+========================================== */
+
+// DÍAS DE LA SEMANA
+
+const diasDisponibilidad = [
+
+  ["lunes", "Lunes"],
+  ["martes", "Martes"],
+  ["miercoles", "Miércoles"],
+  ["jueves", "Jueves"],
+  ["viernes", "Viernes"],
+  ["sabado", "Sábado"],
+  ["domingo", "Domingo"]
+
+];
+
+
+/* MOSTRAR INTERFAZ DE DISPONIBILIDAD */
+
+async function disponibilidad() {
+
+  // VALIDAR ROL DEL USUARIO
+
+  if (rolActual !== "medico" || !uidActual) {
+
+    page.innerHTML = encabezado(
+      "Acceso restringido",
+      "Este apartado pertenece al portal médico."
+    );
+
+    return;
+
+  }
+
+  const medicoId = uidActual;
+
+  // MOSTRAR ESTADO DE CARGA
+
+  page.innerHTML = `
+
+    ${encabezado(
+      "Mi disponibilidad",
+      "Configura tus horarios de atención médica"
+    )}
+
+    <article class="card">
+
+      <p>Cargando disponibilidad...</p>
+
+    </article>
+
+  `;
+
+  // CONFIGURACIÓN INICIAL
+
+  let horario = {
+
+    activo: false,
+
+    dias: [
+      "lunes",
+      "martes",
+      "miercoles",
+      "jueves",
+      "viernes"
+    ],
+
+    horaInicio: "09:00",
+
+    horaFin: "17:00",
+
+    duracion: 30
+
+  };
+
+  try {
+
+    // CONSULTAR FIRESTORE
+
+    const referencia = doc(
+      db,
+      "disponibilidad",
+      medicoId
+    );
+
+    const resultado = await getDoc(referencia);
+
+    if (resultado.exists()) {
+
+      horario = {
+        ...horario,
+        ...resultado.data()
+      };
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Error al consultar disponibilidad:",
+      error
+    );
+
+    if (
+      uidActual === medicoId &&
+      window.location.hash === "#disponibilidad"
+    ) {
+
+      page.innerHTML = `
+
+        ${encabezado(
+          "Mi disponibilidad",
+          "No se pudo consultar la información"
+        )}
+
+        <div class="notice">
+
+          Revisa tu conexión y los permisos
+          de Firestore.
+
+        </div>
+
+        <button
+          id="reintentarDisponibilidad"
+          class="btn primary"
+          type="button">
+
+          Reintentar
+
+        </button>
+
+      `;
+
+      document
+        .getElementById("reintentarDisponibilidad")
+        .addEventListener("click", disponibilidad);
+
+    }
+
+    return;
+
+  }
+
+  // EVITAR MOSTRAR DATOS SI CAMBIÓ LA SESIÓN O PÁGINA
+
+  if (
+    uidActual !== medicoId ||
+    rolActual !== "medico" ||
+    window.location.hash !== "#disponibilidad"
+  ) {
+
+    return;
+
+  }
+
+  // GENERAR INTERFAZ
+
+  page.innerHTML = `
+
+    ${encabezado(
+      "Mi disponibilidad",
+      "Organiza tus días y horarios de consulta"
+    )}
+
+    <section class="disponibilidad-banner">
+
+      <div>
+
+        <h2>Horario de atención</h2>
+
+        <p>
+          Configura tu disponibilidad profesional
+          dentro del prototipo Salud 360°.
+        </p>
+
+      </div>
+
+      <i class="fa-solid fa-calendar-week"
+         aria-hidden="true"></i>
+
+    </section>
+
+    <div class="disponibilidad-grid">
+
+      <!-- FORMULARIO -->
+
+      <article class="card">
+
+        <h2>Configuración semanal</h2>
+
+        <form id="formDisponibilidad">
+
+          <!-- ESTADO -->
+
+          <label class="disponibilidad-estado">
+
+            <input
+              type="checkbox"
+              id="disponibilidadActiva"
+              ${horario.activo ? "checked" : ""}>
+
+            <span>
+              Disponible para consultas
+            </span>
+
+          </label>
+
+          <!-- DÍAS DE ATENCIÓN -->
+
+          <h3 class="disponibilidad-subtitulo">
+
+            Días de atención
+
+          </h3>
+
+          <div class="disponibilidad-dias">
+
+            ${diasDisponibilidad.map(
+              ([valor, nombre]) => `
+
+              <label class="disponibilidad-dia">
+
+                <input
+                  type="checkbox"
+                  name="diasAtencion"
+                  value="${valor}"
+                  ${horario.dias.includes(valor)
+                    ? "checked"
+                    : ""}>
+
+                <span>${nombre}</span>
+
+              </label>
+
+            `).join("")}
+
+          </div>
+
+          <!-- HORARIOS -->
+
+          <h3 class="disponibilidad-subtitulo">
+
+            Horario de consulta
+
+          </h3>
+
+          <div class="disponibilidad-horas">
+
+            <div class="form-field">
+
+              <label for="horaInicio">
+
+                Hora de inicio
+
+              </label>
+
+              <input
+                type="time"
+                id="horaInicio"
+                value="${escapar(horario.horaInicio)}"
+                required>
+
+            </div>
+
+            <div class="form-field">
+
+              <label for="horaFin">
+
+                Hora de término
+
+              </label>
+
+              <input
+                type="time"
+                id="horaFin"
+                value="${escapar(horario.horaFin)}"
+                required>
+
+            </div>
+
+          </div>
+
+          <!-- DURACIÓN -->
+
+          <div class="form-field">
+
+            <label for="duracionConsulta">
+
+              Duración de cada consulta
+
+            </label>
+
+            <select id="duracionConsulta">
+
+              ${[15, 20, 30, 45, 60].map(
+                minutos => `
+
+                <option
+                  value="${minutos}"
+                  ${horario.duracion === minutos
+                    ? "selected"
+                    : ""}>
+
+                  ${minutos} minutos
+
+                </option>
+
+              `).join("")}
+
+            </select>
+
+          </div>
+
+          <!-- BOTÓN GUARDAR -->
+
+          <button
+            type="submit"
+            class="btn primary full">
+
+            <i class="fa-solid fa-floppy-disk"
+               aria-hidden="true"></i>
+
+            Guardar disponibilidad
+
+          </button>
+
+          <p id="mensajeDisponibilidad"
+             role="status"
+             aria-live="polite"></p>
+
+        </form>
+
+      </article>
+
+      <!-- RESUMEN SEMANAL -->
+
+      <div class="disponibilidad-lateral">
+
+        <article class="card">
+
+          <h2>Resumen semanal</h2>
+
+          <div id="resumenDisponibilidad"></div>
+
+        </article>
+
+        <article class="card">
+
+          <h2>Información de consulta</h2>
+
+          <div class="disponibilidad-informacion">
+
+            <p>
+
+              <strong>Modalidad:</strong>
+
+              Demostración
+
+            </p>
+
+            <p>
+
+              <strong>Zona horaria:</strong>
+
+              Centro de México
+
+            </p>
+
+            <p>
+
+              <strong>Duración:</strong>
+
+              <span id="resumenDuracion"></span>
+
+            </p>
+
+          </div>
+
+          <p class="demo-note">
+
+            La disponibilidad se utilizará
+            posteriormente en la agenda médica.
+
+          </p>
+
+        </article>
+
+      </div>
+
+    </div>
+
+  `;
+
+  // EVENTOS DEL FORMULARIO
+
+  const formulario = document.getElementById(
+    "formDisponibilidad"
+  );
+
+  formulario.addEventListener(
+    "input",
+    actualizarResumenDisponibilidad
+  );
+
+  formulario.addEventListener(
+    "submit",
+    guardarDisponibilidad
+  );
+
+  actualizarResumenDisponibilidad();
+
+}
+
+
+/* OBTENER DATOS DEL FORMULARIO */
+
+function obtenerHorarioDisponibilidad() {
+
+  const dias = Array.from(
+
+    document.querySelectorAll(
+      'input[name="diasAtencion"]:checked'
+    )
+
+  ).map(campo => campo.value);
+
+  return {
+
+    activo: document.getElementById(
+      "disponibilidadActiva"
+    ).checked,
+
+    dias,
+
+    horaInicio: document.getElementById(
+      "horaInicio"
+    ).value,
+
+    horaFin: document.getElementById(
+      "horaFin"
+    ).value,
+
+    duracion: Number(
+      document.getElementById(
+        "duracionConsulta"
+      ).value
+    )
+
+  };
+
+}
+
+
+/* ACTUALIZAR RESUMEN SEMANAL */
+
+function actualizarResumenDisponibilidad() {
+
+  const resumen = document.getElementById(
+    "resumenDisponibilidad"
+  );
+
+  if (!resumen) return;
+
+  const horario = obtenerHorarioDisponibilidad();
+
+  resumen.innerHTML = diasDisponibilidad.map(
+    ([valor, nombre]) => {
+
+      const disponible = horario.activo
+        && horario.dias.includes(valor);
+
+      return `
+
+        <div class="disponibilidad-resumen-dia">
+
+          <strong>${nombre}</strong>
+
+          <span class="${
+            disponible
+              ? "horario-activo"
+              : "horario-inactivo"
+          }">
+
+            ${disponible
+
+              ? escapar(
+                  horario.horaInicio +
+                  " - " +
+                  horario.horaFin
+                )
+
+              : "No disponible"
+
+            }
+
+          </span>
+
+        </div>
+
+      `;
+
+    }
+  ).join("");
+
+  document.getElementById(
+    "resumenDuracion"
+  ).textContent = horario.duracion + " minutos";
+
+}
+
+
+/* GUARDAR DISPONIBILIDAD EN FIRESTORE */
+
+async function guardarDisponibilidad(evento) {
+
+  evento.preventDefault();
+
+  if (rolActual !== "medico" || !uidActual) {
+
+    return;
+
+  }
+
+  const medicoId = uidActual;
+
+  const horario = obtenerHorarioDisponibilidad();
+
+  const mensaje = document.getElementById(
+    "mensajeDisponibilidad"
+  );
+
+  const botonGuardar = evento.target.querySelector(
+    '[type="submit"]'
+  );
+
+  // VALIDAR DÍAS
+
+  if (horario.activo && horario.dias.length === 0) {
+
+    mensaje.textContent =
+      "Selecciona al menos un día de atención.";
+
+    mensaje.className = "disponibilidad-error";
+
+    return;
+
+  }
+
+  // VALIDAR HORARIOS
+
+  if (
+    !horario.horaInicio ||
+    !horario.horaFin ||
+    horario.horaInicio >= horario.horaFin
+  ) {
+
+    mensaje.textContent =
+      "La hora de término debe ser posterior a la de inicio.";
+
+    mensaje.className = "disponibilidad-error";
+
+    return;
+
+  }
+
+  // VALIDAR DURACIÓN
+
+  const convertirMinutos = hora => {
+
+    const [h, m] = hora.split(":").map(Number);
+
+    return h * 60 + m;
+
+  };
+
+  const minutosDisponibles =
+    convertirMinutos(horario.horaFin) -
+    convertirMinutos(horario.horaInicio);
+
+  if (
+    ![15, 20, 30, 45, 60].includes(horario.duracion) ||
+    minutosDisponibles < horario.duracion
+  ) {
+
+    mensaje.textContent =
+      "Selecciona una duración compatible con tu horario.";
+
+    mensaje.className = "disponibilidad-error";
+
+    return;
+
+  }
+
+  botonGuardar.disabled = true;
+
+  mensaje.textContent = "Guardando disponibilidad...";
+
+  mensaje.className = "";
+
+  try {
+
+    // GUARDAR HORARIO DEL MÉDICO
+
+    await setDoc(
+
+      doc(
+        db,
+        "disponibilidad",
+        medicoId
+      ),
+
+      {
+
+        medicoId,
+
+        ...horario,
+
+        actualizado: serverTimestamp()
+
+      }
+
+    );
+
+    mensaje.textContent =
+      "Disponibilidad guardada correctamente.";
+
+    mensaje.className = "disponibilidad-exito";
+
+    if (
+      uidActual === medicoId &&
+      evento.target.isConnected
+    ) {
+
+      actualizarResumenDisponibilidad();
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Error al guardar disponibilidad:",
+      error
+    );
+
+    mensaje.textContent =
+      "No se pudo guardar. Revisa la conexión y los permisos.";
+
+    mensaje.className = "disponibilidad-error";
+
+  } finally {
+
+    botonGuardar.disabled = false;
+
+  }
+
 }
 
 
@@ -664,7 +1403,7 @@ function directorio() {
   `;
 }
 
-/* EXPEDIENTE */
+
 
 /* EXPEDIENTE */
 
@@ -1274,13 +2013,22 @@ function perfil() {
 /* NAVEGACIÓN */
 
 const paginas = {
+
   inicio: () => {
+
     if (rolActual === "medico") {
+
       inicioMedico();
+
     } else {
+
       inicioPaciente();
+
     }
+
   },
+
+  disponibilidad,
   citas,
   directorio,
   expediente,
@@ -1288,6 +2036,7 @@ const paginas = {
   chat,
   farmacia,
   perfil
+
 };
 
 function cerrarMenu() {
