@@ -1,12 +1,11 @@
 /*En todas las estrategias, el primer paso es subir a cache archivos
 elegidos como necesarios, la elección depende del proyecto y sus necesidades
 de carga sin conexión a interner*/ 
-
 //CONSTANTES DE ALMACENAMIENTO CACHE
-const CACHE = 'salud360-cache-3';
-const CACHE_DINAMICO = 'salud360-dinamico-3';
-const CACHE_ESTATICO = 'salud360-estatico-3';
-const CACHE_INMUTABLE = 'salud360-inmutable-3';
+const CACHE ='salud360-cache-4';
+const CACHE_DINAMICO ='salud360-dinamico-4';
+const CACHE_ESTATICO ='salud360-estatico-4';
+const CACHE_INMUTABLE ='salud360-inmutable-4';
 
 
 /***********************INSTALACIÓN ************************

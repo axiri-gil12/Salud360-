@@ -187,50 +187,423 @@ function inicioPaciente() {
   `;
 }
 
-/* INICIO MÉDICO */
+
+/* ==========================================
+   INICIO DEL MÉDICO
+   PANEL PRINCIPAL DE SALUD 360°
+========================================== */
 
 function inicioMedico() {
+
+  // OBTENER FECHA ACTUAL
+
+  const fechaActual = new Date().toLocaleDateString(
+    "es-MX",
+    {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    }
+  );
+
+  // ESTADO DE VERIFICACIÓN PROFESIONAL
+
+  const verificado = usuario.verificado === true;
+
+  const estadoProfesional = verificado
+    ? "Profesional verificado"
+    : "Verificación pendiente";
+
+  // INDICADORES DEL PANEL MÉDICO
+  // Se conectarán a Firebase en etapas posteriores.
+
+  const indicadores = [
+
+    {
+      titulo: "Pacientes vinculados",
+      icono: "users",
+      valor: "—",
+      detalle: "Vinculación pendiente",
+      ruta: "vinculos",
+      color: "azul"
+    },
+
+    {
+      titulo: "Citas de hoy",
+      icono: "calendar-check",
+      valor: "—",
+      detalle: "Agenda pendiente",
+      ruta: "citas",
+      color: "verde"
+    },
+
+    {
+      titulo: "Citas pendientes",
+      icono: "clock",
+      valor: "—",
+      detalle: "Solicitudes de consulta",
+      ruta: "citas",
+      color: "naranja"
+    },
+
+    {
+      titulo: "Mensajes nuevos",
+      icono: "comments",
+      valor: "—",
+      detalle: "Chat pendiente",
+      ruta: "chat",
+      color: "violeta"
+    }
+
+  ];
+
+  // GENERAR INTERFAZ DEL MÉDICO
+
   page.innerHTML = `
-    <section class="hero">
-      <span class="hero-badge">
-        Panel Médico - Demostración
-      </span>
 
-      <h1>Hola, ${escapar(usuario.nombre)}</h1>
+    <div class="panel-medico">
 
-      <p>
-        Administra tus consultas, pacientes,
-        mensajes y documentos profesionales.
-      </p>
+      <!-- ENCABEZADO PRINCIPAL -->
 
-      <div class="hero-actions">
-        ${boton("Ver agenda", "citas")}
+      <div class="medico-encabezado">
+
+        <div>
+
+          <h1>Panel del médico</h1>
+
+          <p>
+            Consulta y administra tu actividad profesional.
+          </p>
+
+        </div>
+
+        <div class="medico-fecha">
+
+          <i class="fa-solid fa-calendar-days"
+             aria-hidden="true"></i>
+
+          ${escapar(fechaActual)}
+
+        </div>
+
       </div>
-    </section>
 
-    <h2 class="section-title">Accesos rápidos</h2>
+      <!-- BANNER DE BIENVENIDA -->
 
-    <div class="quick-grid">
-      ${acceso("calendar-check", "Agenda Médica", "citas")}
-      ${acceso("users", "Mis Pacientes", "vinculos")}
-      ${acceso("comments", "Chat Médico", "chat")}
-      ${acceso("file-medical", "Expedientes", "expediente")}
+      <section class="medico-bienvenida">
+
+        <div class="medico-bienvenida-contenido">
+
+          <span class="medico-etiqueta">
+
+            Portal Médico | Demostración
+
+          </span>
+
+          <h2>
+            Bienvenido, ${escapar(usuario.nombre)}
+          </h2>
+
+          <p>
+            ${escapar(
+              usuario.especialidad || "Profesional de salud"
+            )}
+          </p>
+
+          <p>
+            Administra tus consultas, pacientes,
+            expedientes y servicios desde un solo lugar.
+          </p>
+
+          <div class="medico-bienvenida-acciones">
+
+            <a href="#citas"
+               class="medico-btn-blanco">
+
+              <i class="fa-solid fa-calendar-check"
+                 aria-hidden="true"></i>
+
+              Ver agenda
+
+            </a>
+
+            <a href="#perfil"
+               class="medico-btn-transparente">
+
+              <i class="fa-solid fa-user-gear"
+                 aria-hidden="true"></i>
+
+              Mi perfil
+
+            </a>
+
+          </div>
+
+        </div>
+
+        <div class="medico-bienvenida-icono"
+             aria-hidden="true">
+
+          <i class="fa-solid fa-user-doctor"></i>
+
+        </div>
+
+      </section>
+
+      <!-- RESUMEN DE ACTIVIDAD -->
+
+      <div class="medico-titulo-seccion">
+
+        <h2>Resumen de actividad</h2>
+
+        <span>Panel de demostración</span>
+
+      </div>
+
+      <div class="medico-estadisticas">
+
+        ${indicadores.map(item => `
+
+          <a href="#${item.ruta}"
+             class="medico-estadistica">
+
+            <div class="medico-estadistica-superior">
+
+              <span class="medico-estadistica-icono
+                           medico-color-${item.color}">
+
+                <i class="fa-solid fa-${item.icono}"
+                   aria-hidden="true"></i>
+
+              </span>
+
+              <i class="fa-solid fa-arrow-up-right-from-square
+                        medico-flecha"
+                 aria-hidden="true"></i>
+
+            </div>
+
+            <p>${escapar(item.titulo)}</p>
+
+            <strong>${escapar(item.valor)}</strong>
+
+            <small>${escapar(item.detalle)}</small>
+
+          </a>
+
+        `).join("")}
+
+      </div>
+
+      <!-- AGENDA Y ESTADO PROFESIONAL -->
+
+      <div class="medico-dos-columnas">
+
+        <article class="card medico-tarjeta">
+
+          <div class="medico-tarjeta-encabezado">
+
+            <h2>Próximas citas</h2>
+
+            <a href="#citas"
+               class="medico-enlace">
+
+              Ver agenda
+
+            </a>
+
+          </div>
+
+          <div class="medico-vacio">
+
+            <span class="medico-vacio-icono">
+
+              <i class="fa-solid fa-calendar-days"
+                 aria-hidden="true"></i>
+
+            </span>
+
+            <h3>Agenda médica</h3>
+
+            <p>
+              Las próximas consultas aparecerán
+              cuando se habilite el módulo de citas.
+            </p>
+
+            ${boton("Consultar agenda", "citas")}
+
+          </div>
+
+        </article>
+
+        <!-- ESTADO DEL PERFIL -->
+
+        <article class="card medico-tarjeta">
+
+          <h2>Estado profesional</h2>
+
+          <div class="medico-perfil-resumen">
+
+            <div class="medico-avatar">
+
+              ${escapar(usuario.iniciales || "MD")}
+
+            </div>
+
+            <div>
+
+              <h3>${escapar(usuario.nombre)}</h3>
+
+              <p>
+                ${escapar(
+                  usuario.especialidad || "Sin especialidad"
+                )}
+              </p>
+
+            </div>
+
+          </div>
+
+          <div class="medico-estado">
+
+            <i class="fa-solid ${
+              verificado
+                ? "fa-circle-check"
+                : "fa-clock"
+            }" aria-hidden="true"></i>
+
+            ${escapar(estadoProfesional)}
+
+          </div>
+
+          <div class="medico-dato">
+
+            <span>Tipo de cuenta</span>
+
+            <strong>Médico</strong>
+
+          </div>
+
+          <div class="medico-dato">
+
+            <span>Modalidad</span>
+
+            <strong>Demostración</strong>
+
+          </div>
+
+          ${boton("Editar perfil profesional", "perfil")}
+
+        </article>
+
+      </div>
+
+      <!-- ACCESOS RÁPIDOS -->
+
+      <div class="medico-titulo-seccion">
+
+        <h2>Accesos rápidos</h2>
+
+      </div>
+
+      <div class="quick-grid medico-accesos">
+
+        ${acceso(
+          "calendar-check",
+          "Agenda médica",
+          "citas"
+        )}
+
+        ${acceso(
+          "users",
+          "Mis pacientes",
+          "vinculos"
+        )}
+
+        ${acceso(
+          "file-medical",
+          "Expediente clínico",
+          "expediente"
+        )}
+
+        ${acceso(
+          "comments",
+          "Chat médico",
+          "chat"
+        )}
+
+        ${acceso(
+          "hospital",
+          "Red de servicios",
+          "directorio"
+        )}
+
+        ${acceso(
+          "capsules",
+          "Farmacia",
+          "farmacia"
+        )}
+
+        ${acceso(
+          "user-gear",
+          "Perfil profesional",
+          "perfil"
+        )}
+
+      </div>
+
+      <!-- DISPONIBILIDAD MÉDICA -->
+
+      <article class="card medico-disponibilidad">
+
+        <div class="medico-disponibilidad-icono">
+
+          <i class="fa-solid fa-calendar-week"
+             aria-hidden="true"></i>
+
+        </div>
+
+        <div class="medico-disponibilidad-info">
+
+          <h2>Mi disponibilidad</h2>
+
+          <p>
+            Configura los días y horarios
+            disponibles para atender consultas.
+          </p>
+
+        </div>
+
+        <button type="button"
+                class="btn primary"
+                disabled>
+
+          Próximamente
+
+        </button>
+
+      </article>
+
+      <!-- AVISO DE DEMOSTRACIÓN -->
+
+      <div class="medico-aviso">
+
+        <i class="fa-solid fa-circle-info"
+           aria-hidden="true"></i>
+
+        <p>
+          Salud 360° se encuentra en fase de prototipo.
+          Utiliza únicamente información ficticia.
+        </p>
+
+      </div>
+
     </div>
 
-    <div class="two-grid section-space">
-      ${tarjeta("Consultas programadas", `
-        <span class="pill">Agenda de demostración</span>
-        <p>Las próximas consultas aparecerán aquí.</p>
-        ${boton("Abrir agenda", "citas")}
-      `)}
-
-      ${tarjeta("Pacientes vinculados", `
-        <p>Consulta tus pacientes registrados.</p>
-        ${boton("Ver pacientes", "vinculos")}
-      `)}
-    </div>
   `;
 }
+
 
 /* CITAS */
 
