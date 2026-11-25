@@ -471,6 +471,57 @@ async function cargarDocumentos() {
       "No se pudieron cargar los documentos.";
   }
 }
+
+/* VINCULACIÓN DE MÉDICOS Y PACIENTES */
+
+function vinculos() {
+
+  const medico = rolActual === "medico";
+
+  page.innerHTML = `
+
+    ${encabezado(
+      medico ? "Mis Pacientes" : "Mis Médicos",
+      medico
+        ? "Administración de pacientes vinculados"
+        : "Administración de médicos vinculados"
+    )}
+
+    <div class="notice">
+      Las vinculaciones deberán ser autorizadas.
+      Utiliza únicamente información ficticia.
+    </div>
+
+    <div class="two-grid">
+
+      ${tarjeta(
+        medico ? "Pacientes vinculados" : "Médicos vinculados",
+        `
+          <div class="empty-state">
+            ${medico
+              ? "Todavía no tienes pacientes vinculados."
+              : "Todavía no tienes médicos vinculados."}
+          </div>
+        `
+      )}
+
+      ${tarjeta("Solicitudes de vinculación", `
+
+        <p>
+          Aquí aparecerán las solicitudes pendientes.
+        </p>
+
+        <span class="pill">
+          Pendiente de conexión con Firebase
+        </span>
+
+      `)}
+
+    </div>
+
+  `;
+}
+
 /* CHAT */
 
 function chat() {
