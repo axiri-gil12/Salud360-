@@ -14,37 +14,44 @@
     {
       "src": "./img/imagenes/icons/360_1.png",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any",
+      "sizes": "72x72"
     },
     {
       "src": "./img/imagenes/icons/360_2.png",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any",
+      "sizes": "96x96"
     },
     {
       "src": "./img/imagenes/icons/360_3.png",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any",
+      "sizes": "128x128"
     },
     {
       "src": "./img/imagenes/icons/360_4.png",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any",
+      "sizes": "144x144"
     },
     {
       "src": "./img/imagenes/icons/360_5.png",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any",
+      "sizes": "152x152"
     },
     {
       "src": "./img/imagenes/icons/360_6.png",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any",
+      "sizes": "192x192"
     },
     {
       "src": "./img/imagenes/icons/360_7.png",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any",
+      "sizes": "384x384"
     }
   ]
 }
