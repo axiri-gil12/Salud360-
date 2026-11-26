@@ -4613,7 +4613,59 @@ function perfil() {
   `;
 }
 
+/* ==========================================
+   INTEGRACIÓN DEL PERFIL CON EL DIRECTORIO
+   SALUD 360°
+========================================== */
 
+async function perfilConDirectorio() {
+
+  const uid = uidActual;
+
+  await perfil();
+
+  /* COMPROBAR ROL Y SESIÓN */
+
+  if (
+    rolActual !== "medico" ||
+    !uid ||
+    uidActual !== uid
+  ) return;
+
+
+  /* COMPROBAR PÁGINA ACTUAL */
+
+  const ruta = location.hash
+    .replace(/^#\/?/, "");
+
+  if (ruta !== "perfil") return;
+
+
+  /* EVITAR DUPLICAR EL FORMULARIO */
+
+  if (
+    document.getElementById(
+      "publicacionMedica"
+    )
+  ) return;
+
+
+  /* AGREGAR PUBLICACIÓN PROFESIONAL */
+
+  page.insertAdjacentHTML(
+
+    "beforeend",
+
+    interfazPublicacionMedica()
+
+  );
+
+
+  /* CARGAR DATOS DESDE FIREBASE */
+
+  await cargarPublicacionMedica();
+
+}
 /* NAVEGACIÓN */
 
 const paginas = {
