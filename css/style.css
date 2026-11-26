@@ -1896,3 +1896,742 @@ textarea:focus-visible {
   }
 
 }
+/* ==========================================
+   AGENDA MÉDICA Y GESTIÓN DE CITAS
+   SALUD 360°
+========================================== */
+
+
+/* ==========================================
+   1. BANNER PRINCIPAL DE CITAS
+========================================== */
+
+.citas-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+  padding: 30px;
+  margin-bottom: 25px;
+  border-radius: 20px;
+  background: linear-gradient(
+    135deg,
+    #0D3B66,
+    #238BD3
+  );
+  color: #FFFFFF;
+  box-shadow: 0 6px 20px rgba(13, 59, 102, 0.12);
+}
+
+.citas-banner h2 {
+  margin: 0 0 10px;
+  font-size: 26px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.citas-banner p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #FFFFFF;
+  opacity: 0.95;
+}
+
+.citas-banner > i {
+  font-size: 65px;
+  color: #FFFFFF;
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+
+/* ==========================================
+   2. FORMULARIO DE SOLICITUD DE CITAS
+========================================== */
+
+#formCita {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 20px;
+}
+
+#formCita .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+#formCita label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--texto, #243746);
+}
+
+#formCita input,
+#formCita select,
+#filtroCitas {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 15px;
+  border: 1px solid var(--borde, #DCE5EE);
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: var(--texto, #243746);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+#formCita input:focus,
+#formCita select:focus,
+#filtroCitas:focus {
+  border-color: var(--azul-claro, #238BD3);
+  box-shadow: 0 0 0 3px rgba(35, 139, 211, 0.12);
+}
+
+#formCita input::placeholder {
+  color: #8293A3;
+}
+
+#formCita input:disabled,
+#formCita select:disabled {
+  background: #F0F4F8;
+  color: #8293A3;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+
+/* ==========================================
+   3. BOTONES DEL FORMULARIO
+========================================== */
+
+#consultarDisponibilidadCita,
+#solicitarCita {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  background: var(--azul-claro, #238BD3);
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+#consultarDisponibilidadCita:hover:not(:disabled),
+#solicitarCita:hover:not(:disabled) {
+  background: var(--azul, #0D3B66);
+  box-shadow: 0 4px 12px rgba(13, 59, 102, 0.15);
+}
+
+#consultarDisponibilidadCita {
+  align-self: flex-start;
+}
+
+#solicitarCita {
+  width: 100%;
+}
+
+#formCita button:disabled {
+  background: #B8C9D8;
+  color: #FFFFFF;
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.85;
+}
+
+
+/* ==========================================
+   4. RESULTADO DE DISPONIBILIDAD MÉDICA
+========================================== */
+
+#resultadoDisponibilidadCita {
+  font-size: 14px;
+  color: var(--texto, #243746);
+  line-height: 1.6;
+}
+
+#resultadoDisponibilidadCita:empty {
+  display: none;
+}
+
+.cita-disponibilidad {
+  padding: 20px;
+  border: 1px solid #C5E0F4;
+  border-left: 5px solid #238BD3;
+  border-radius: 12px;
+  background: #F0F8FF;
+}
+
+.cita-disponibilidad h3 {
+  margin: 0 0 12px;
+  font-size: 17px;
+  color: var(--azul, #0D3B66);
+}
+
+.cita-disponibilidad p {
+  margin: 7px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--texto, #243746);
+  overflow-wrap: anywhere;
+}
+
+
+/* ==========================================
+   5. ENCABEZADO DE CITAS REGISTRADAS
+========================================== */
+
+.citas-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.citas-encabezado h2 {
+  margin: 0;
+  font-size: 21px;
+  color: var(--azul, #0D3B66);
+}
+
+#actualizarCitas {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  min-height: 42px;
+  border: 1px solid var(--borde, #DCE5EE);
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: var(--azul, #0D3B66);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+#actualizarCitas:hover {
+  background: #EAF4FC;
+  border-color: #238BD3;
+}
+
+
+/* ==========================================
+   6. FILTROS DE CITAS
+========================================== */
+
+#filtroCitas {
+  max-width: 300px;
+  margin-bottom: 15px;
+  cursor: pointer;
+}
+
+
+/* ==========================================
+   7. LISTADO DE CITAS
+========================================== */
+
+#listaCitas {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+#listaCitas > p {
+  padding: 20px;
+  text-align: center;
+  color: #718394;
+  font-size: 14px;
+}
+
+.cita-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid var(--borde, #DCE5EE);
+  border-radius: 15px;
+  background: #FFFFFF;
+  box-shadow: 0 3px 10px rgba(13, 59, 102, 0.04);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.cita-item:hover {
+  border-color: #B9D9EF;
+  box-shadow: 0 5px 15px rgba(13, 59, 102, 0.08);
+}
+
+
+/* ==========================================
+   8. ICONO DE LA CITA
+========================================== */
+
+.cita-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
+  border-radius: 15px;
+  background: #E7F3FC;
+  color: var(--azul-claro, #238BD3);
+  font-size: 25px;
+}
+
+
+/* ==========================================
+   9. INFORMACIÓN DE LA CITA
+========================================== */
+
+.cita-informacion {
+  flex: 1;
+  min-width: 0;
+}
+
+.cita-informacion h3 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--azul, #0D3B66);
+}
+
+.cita-informacion p {
+  margin: 5px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--texto, #243746);
+}
+
+.cita-informacion small {
+  display: block;
+  margin: 10px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #718394;
+  overflow-wrap: anywhere;
+}
+
+
+/* ==========================================
+   10. ESTADOS DE LAS CITAS
+========================================== */
+
+.cita-estado {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  margin-top: 5px;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cita-estado::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+
+/* CITA PENDIENTE */
+
+.cita-pendiente {
+  background: #FFF4D8;
+  color: #926000;
+  border-color: #F1D999;
+}
+
+
+/* CITA CONFIRMADA */
+
+.cita-confirmada {
+  background: #E4F7ED;
+  color: #167347;
+  border-color: #BDE7CF;
+}
+
+
+/* CITA RECHAZADA */
+
+.cita-rechazada {
+  background: #FFF1F3;
+  color: #B91C3C;
+  border-color: #F3C0CA;
+}
+
+
+/* CITA CANCELADA */
+
+.cita-cancelada {
+  background: #EDF1F5;
+  color: #64748B;
+  border-color: #DCE5EE;
+}
+
+
+/* ==========================================
+   11. ACCIONES DE LA CITA
+========================================== */
+
+.cita-acciones {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 10px;
+  min-width: 125px;
+}
+
+.cita-acciones .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 16px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+
+/* BOTÓN CONFIRMAR */
+
+.cita-acciones
+button[data-estado-cita="confirmada"] {
+  background: #167347;
+  color: #FFFFFF;
+  border: 1px solid #167347;
+}
+
+.cita-acciones
+button[data-estado-cita="confirmada"]:hover:not(:disabled) {
+  background: #105C38;
+  border-color: #105C38;
+}
+
+
+/* BOTÓN RECHAZAR */
+
+.cita-acciones
+button[data-estado-cita="rechazada"] {
+  background: #FFF1F3;
+  color: #B91C3C;
+  border: 1px solid #F3C0CA;
+}
+
+.cita-acciones
+button[data-estado-cita="rechazada"]:hover:not(:disabled) {
+  background: #DC2445;
+  color: #FFFFFF;
+  border-color: #DC2445;
+}
+
+
+/* BOTÓN CANCELAR */
+
+.cita-acciones .cita-btn-cancelar {
+  background: #FFFFFF;
+  color: #DC2445;
+  border: 1px solid #DC2445;
+}
+
+.cita-acciones .cita-btn-cancelar:hover:not(:disabled) {
+  background: #DC2445;
+  color: #FFFFFF;
+}
+
+
+/* BOTONES DESHABILITADOS */
+
+.cita-acciones button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+
+/* ==========================================
+   12. MENSAJES DEL FORMULARIO
+========================================== */
+
+#mensajeCita {
+  margin: 0;
+  padding: 12px 15px;
+  border-radius: 10px;
+  background: #EAF4FC;
+  color: #0D3B66;
+  font-size: 14px;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+#mensajeCita:empty {
+  display: none;
+}
+
+#mensajeCita.cita-exito {
+  background: #E4F7ED;
+  color: #167347;
+  border: 1px solid #BDE7CF;
+}
+
+#mensajeCita.cita-error {
+  background: #FFF1F3;
+  color: #B91C3C;
+  border: 1px solid #F3C0CA;
+}
+
+
+/* ==========================================
+   13. ESTADO SIN CITAS
+========================================== */
+
+#listaCitas .empty-state {
+  padding: 35px 20px;
+  border: 1px dashed #C5D5E3;
+  border-radius: 14px;
+  background: var(--fondo, #F3F8FC);
+  color: #64748B;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+
+/* ==========================================
+   14. ACCESIBILIDAD
+========================================== */
+
+#formCita button:focus-visible,
+#actualizarCitas:focus-visible,
+.cita-acciones button:focus-visible {
+  outline: 3px solid #238BD3;
+  outline-offset: 3px;
+}
+
+
+/* ==========================================
+   15. DISEÑO RESPONSIVO PARA TABLETAS
+========================================== */
+
+@media screen and (max-width: 992px) {
+
+  .citas-banner {
+    padding: 25px;
+  }
+
+  .citas-banner h2 {
+    font-size: 23px;
+  }
+
+  .citas-banner > i {
+    font-size: 55px;
+  }
+
+  .cita-item {
+    gap: 15px;
+    padding: 18px;
+  }
+
+  .cita-acciones {
+    min-width: 110px;
+  }
+
+}
+
+
+/* ==========================================
+   16. DISEÑO RESPONSIVO PARA CELULARES
+========================================== */
+
+@media screen and (max-width: 768px) {
+
+  .citas-banner {
+    padding: 22px;
+    gap: 15px;
+    border-radius: 15px;
+  }
+
+  .citas-banner h2 {
+    font-size: 21px;
+  }
+
+  .citas-banner p {
+    font-size: 13px;
+  }
+
+  .citas-banner > i {
+    font-size: 40px;
+  }
+
+  #formCita {
+    gap: 15px;
+  }
+
+  #formCita input,
+  #formCita select,
+  #filtroCitas {
+    font-size: 16px;
+  }
+
+  #consultarDisponibilidadCita {
+    width: 100%;
+  }
+
+  .citas-encabezado {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .citas-encabezado h2 {
+    font-size: 19px;
+  }
+
+  #actualizarCitas {
+    width: 100%;
+  }
+
+  #filtroCitas {
+    max-width: 100%;
+  }
+
+  .cita-item {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .cita-icono {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    font-size: 21px;
+    border-radius: 12px;
+  }
+
+  .cita-informacion h3 {
+    font-size: 16px;
+  }
+
+  .cita-informacion p {
+    font-size: 13px;
+  }
+
+  .cita-acciones {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    min-width: 0;
+    padding-top: 12px;
+    border-top: 1px solid #DCE5EE;
+  }
+
+  .cita-acciones:empty {
+    display: none;
+  }
+
+  .cita-acciones .btn {
+    flex: 1 1 100px;
+    width: auto;
+  }
+
+}
+
+
+/* ==========================================
+   17. PANTALLAS PEQUEÑAS
+========================================== */
+
+@media screen and (max-width: 480px) {
+
+  .citas-banner {
+    padding: 18px;
+  }
+
+  .citas-banner h2 {
+    font-size: 19px;
+  }
+
+  .citas-banner > i {
+    font-size: 32px;
+  }
+
+  .cita-disponibilidad {
+    padding: 15px;
+  }
+
+  .cita-item {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .cita-acciones {
+    flex-direction: column;
+  }
+
+  .cita-acciones .btn {
+    flex: none;
+    width: 100%;
+    min-height: 44px;
+  }
+
+}
+
+
+/* ==========================================
+   18. REDUCIR ANIMACIONES
+========================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .cita-item,
+  .cita-acciones .btn,
+  #formCita input,
+  #formCita select,
+  #formCita button,
+  #actualizarCitas {
+    transition: none;
+  }
+
+}
+
+/* ==========================================
+   FIN DE ESTILOS DE LA AGENDA MÉDICA
+========================================== */

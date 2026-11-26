@@ -15,7 +15,12 @@ import {
   getDoc,
   updateDoc,
   setDoc,
-  serverTimestamp
+  serverTimestamp,
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 /* ELEMENTOS */
@@ -1348,62 +1353,2654 @@ async function guardarDisponibilidad(evento) {
 }
 
 
-/* CITAS */
+/* ==========================================
+   AGENDA MÉDICA Y GESTIÓN DE CITAS
+   SALUD 360°
+========================================== */
+
+let disponibilidadCita = null;
+
+const estadosCitas = {
+  pendiente: "Pendiente",
+  confirmada: "Confirmada",
+  rechazada: "Rechazada",
+  cancelada: "Cancelada"
+};
+
+
+/* INTERFAZ PRINCIPAL DE CITAS */
 
 function citas() {
+
   const medico = rolActual === "medico";
 
+  disponibilidadCita = null;
+
   page.innerHTML = `
+
     ${encabezado(
-      medico ? "Agenda Médica" : "Citas y Telemedicina",
-      "Administración de consultas"
+      medico ? "Agenda Médica" : "Mis Citas Médicas",
+      medico
+        ? "Administra tus solicitudes de consulta"
+        : "Solicita y consulta tus citas médicas"
     )}
 
-    <div class="two-grid">
-      ${tarjeta(
-        medico ? "Mi agenda" : "Agendar nueva cita",
-        `
-          <p>
-            ${medico
-              ? "Aquí aparecerán las solicitudes de consulta."
-              : "Selecciona un médico vinculado para solicitar una consulta."}
-          </p>
-          <span class="pill">Próximamente</span>
-        `
-      )}
+    <section class="citas-banner">
 
-      ${tarjeta("Historial de citas", `
-        <p>Las citas registradas aparecerán aquí.</p>
-      `)}
-    </div>
+      <div>
+
+        <h2>
+          ${medico
+            ? "Organiza tus consultas"
+            : "Agenda tu próxima consulta"}
+        </h2>
+
+        <p>
+          Gestiona tus citas desde Salud 360°.
+        </p>
+
+      </div>
+
+      <i class="fa-solid fa-calendar-check"></i>
+
+    </section>
+
+    ${!medico ? `
+
+      <article class="card section-space">
+
+        <h2>Solicitar nueva cita</h2>
+
+        <form id="formCita">
+
+          <div class="form-field">
+
+            <label for="medicoCita">
+              Identificador del médico
+            </label>
+
+            <input
+              type="text"
+              id="medicoCita"
+              maxlength="128"
+              placeholder="Ingresa el UID del médico"
+              required>
+
+          </div>
+
+          <button
+            type="button"
+            id="consultarDisponibilidadCita"
+            class="btn primary">
+
+            Consultar disponibilidad
+
+          </button>
+
+          <div id="resultadoDisponibilidadCita"></div>
+
+          <div class="form-field">
+
+            <label for="fechaCita">
+              Fecha de consulta
+            </label>
+
+            <input
+              type="date"
+              id="fechaCita"
+              min="${fechaLocalCitas()}"
+              required
+              disabled>
+
+          </div>
+
+          <div class="form-field">
+
+            <label for="horaCita">
+              Horario disponible
+            </label>
+
+            <select id="horaCita" required disabled>
+
+              <option value="">
+                Selecciona una fecha
+              </option>
+
+            </select>
+
+          </div>
+
+          <button
+            type="submit"
+            id="solicitarCita"
+            class="btn primary full"
+            disabled>
+
+            <i class="fa-solid fa-calendar-plus"></i>
+
+            Solicitar cita
+
+          </button>
+
+          <p id="mensajeCita"
+             role="status"
+             aria-live="polite"></p>
+
+        </form>
+
+      </article>
+
+    ` : ""}
+
+    <article class="card section-space">
+
+      <div class="citas-encabezado">
+
+        <h2>
+          ${medico
+            ? "Solicitudes y consultas"
+            : "Mis citas registradas"}
+        </h2>
+
+        <button
+          type="button"
+          id="actualizarCitas"
+          class="btn">
+
+          <i class="fa-solid fa-rotate"></i>
+
+          Actualizar
+
+        </button>
+
+      </div>
+
+      <div class="form-field">
+
+        <label for="filtroCitas">
+          Filtrar por estado
+        </label>
+
+        <select id="filtroCitas">
+
+          <option value="todas">Todas las citas</option>
+          <option value="pendiente">Pendientes</option>
+          <option value="confirmada">Confirmadas</option>
+          <option value="rechazada">Rechazadas</option>
+          <option value="cancelada">Canceladas</option>
+
+        </select>
+
+      </div>
+
+      <div id="listaCitas">
+
+        <p>Cargando citas...</p>
+
+      </div>
+
+    </article>
+
+    <p class="demo-note">
+
+      Módulo de demostración.
+      Utiliza únicamente información ficticia.
+
+    </p>
+
   `;
+
+  cargarCitas();
+  /* CARGAR MÉDICO DESDE EL DIRECTORIO */
+
+if (rolActual === "paciente") {
+
+  cargarMedicoSeleccionadoCita();
+
+}/* CARGAR MÉDICO DESDE EL DIRECTORIO */
+
+if (rolActual === "paciente") {
+
+  cargarMedicoSeleccionadoCita();
+
+}
+
+}
+
+
+/* OBTENER FECHA LOCAL */
+
+function fechaLocalCitas() {
+
+  const fecha = new Date();
+
+  const anio = fecha.getFullYear();
+
+  const mes = String(
+    fecha.getMonth() + 1
+  ).padStart(2, "0");
+
+  const dia = String(
+    fecha.getDate()
+  ).padStart(2, "0");
+
+  return `${anio}-${mes}-${dia}`;
+
+}
+
+
+/* CONSULTAR DISPONIBILIDAD DEL MÉDICO */
+
+async function consultarDisponibilidadCita() {
+
+  if (rolActual !== "paciente" || !uidActual) return;
+
+  const campoMedico =
+    document.getElementById("medicoCita");
+
+  const resultado =
+    document.getElementById("resultadoDisponibilidadCita");
+
+  const fecha =
+    document.getElementById("fechaCita");
+
+  const hora =
+    document.getElementById("horaCita");
+
+  const boton =
+    document.getElementById("solicitarCita");
+
+  const medicoId = campoMedico.value.trim();
+
+  const uid = uidActual;
+
+  disponibilidadCita = null;
+
+  fecha.disabled = true;
+  hora.disabled = true;
+  boton.disabled = true;
+
+  fecha.value = "";
+
+  hora.innerHTML = `
+    <option value="">Selecciona una fecha</option>
+  `;
+
+  if (!medicoId || medicoId.includes("/")) {
+
+    resultado.textContent =
+      "Ingresa un identificador válido.";
+
+    return;
+
+  }
+
+  resultado.textContent =
+    "Consultando disponibilidad...";
+
+  try {
+
+    const referencia = doc(
+      db,
+      "disponibilidad",
+      medicoId
+    );
+
+    const snapshot = await getDoc(referencia);
+
+    if (
+      uidActual !== uid ||
+      !campoMedico.isConnected ||
+      campoMedico.value.trim() !== medicoId
+    ) return;
+
+    if (!snapshot.exists() ||
+        snapshot.data().activo !== true) {
+
+      resultado.textContent =
+        "El médico no tiene disponibilidad activa.";
+
+      return;
+
+    }
+
+    disponibilidadCita = {
+
+      ...snapshot.data(),
+
+      medicoId
+
+    };
+
+    resultado.innerHTML = `
+
+      <div class="cita-disponibilidad">
+
+        <h3>Disponibilidad encontrada</h3>
+
+        <p>
+
+          Días:
+          ${escapar(
+            disponibilidadCita.dias.join(", ")
+          )}
+
+        </p>
+
+        <p>
+
+          Horario:
+          ${escapar(disponibilidadCita.horaInicio)}
+          -
+          ${escapar(disponibilidadCita.horaFin)}
+
+        </p>
+
+        <p>
+
+          Duración:
+          ${escapar(disponibilidadCita.duracion)}
+          minutos
+
+        </p>
+
+      </div>
+
+    `;
+
+    fecha.disabled = false;
+
+  } catch (error) {
+
+    console.error(
+      "Error al consultar disponibilidad:",
+      error
+    );
+
+    if (!resultado.isConnected) return;
+
+    resultado.textContent =
+      "No se encontró disponibilidad accesible para ese médico.";
+
+  }
+
+}
+
+
+/* GENERAR HORARIOS DE CONSULTA */
+
+function generarHorariosCita() {
+
+  const campoFecha =
+    document.getElementById("fechaCita");
+
+  const campoHora =
+    document.getElementById("horaCita");
+
+  const boton =
+    document.getElementById("solicitarCita");
+
+  const mensaje =
+    document.getElementById("mensajeCita");
+
+  if (!campoFecha || !campoHora || !boton) return;
+
+  campoHora.innerHTML = `
+    <option value="">Selecciona un horario</option>
+  `;
+
+  campoHora.disabled = true;
+  boton.disabled = true;
+
+  mensaje.textContent = "";
+
+  if (!disponibilidadCita || !campoFecha.value) return;
+
+  const fecha = campoFecha.value;
+
+  if (fecha < fechaLocalCitas()) {
+
+    mensaje.textContent =
+      "No puedes seleccionar una fecha pasada.";
+
+    return;
+
+  }
+
+  const dias = [
+
+    "domingo",
+    "lunes",
+    "martes",
+    "miercoles",
+    "jueves",
+    "viernes",
+    "sabado"
+
+  ];
+
+  const fechaSeleccionada =
+    new Date(fecha + "T12:00:00");
+
+  const diaSeleccionado =
+    dias[fechaSeleccionada.getDay()];
+
+  if (!disponibilidadCita.dias.includes(
+    diaSeleccionado
+  )) {
+
+    mensaje.textContent =
+      "El médico no atiende ese día.";
+
+    return;
+
+  }
+
+  const convertirMinutos = horario => {
+
+    const [h, m] = horario.split(":").map(Number);
+
+    return h * 60 + m;
+
+  };
+
+  const inicio = convertirMinutos(
+    disponibilidadCita.horaInicio
+  );
+
+  const fin = convertirMinutos(
+    disponibilidadCita.horaFin
+  );
+
+  const duracion = Number(
+    disponibilidadCita.duracion
+  );
+
+  if (![15, 20, 30, 45, 60].includes(duracion)) {
+
+    mensaje.textContent =
+      "La duración de consulta no es válida.";
+
+    return;
+
+  }
+
+  const horarios = [];
+
+  for (
+    let minuto = inicio;
+    minuto + duracion <= fin;
+    minuto += duracion
+  ) {
+
+    const h = String(
+      Math.floor(minuto / 60)
+    ).padStart(2, "0");
+
+    const m = String(
+      minuto % 60
+    ).padStart(2, "0");
+
+    const horario = `${h}:${m}`;
+
+    const momento = new Date(
+      fecha + "T" + horario + ":00"
+    );
+
+    if (momento <= new Date()) continue;
+
+    horarios.push(horario);
+
+  }
+
+  if (horarios.length === 0) {
+
+    mensaje.textContent =
+      "No hay horarios para esta fecha.";
+
+    return;
+
+  }
+
+  campoHora.innerHTML += horarios.map(horario => `
+
+    <option value="${horario}">
+
+      ${horario}
+
+    </option>
+
+  `).join("");
+
+  campoHora.disabled = false;
+
+  boton.disabled = false;
+
+}
+
+
+/* REGISTRAR SOLICITUD DE CITA */
+
+async function guardarCita(evento) {
+
+  evento.preventDefault();
+
+  if (
+    rolActual !== "paciente" ||
+    !uidActual ||
+    !disponibilidadCita
+  ) return;
+
+  const formulario = evento.target;
+
+  const pacienteId = uidActual;
+
+  const medicoId = formulario
+    .querySelector("#medicoCita").value.trim();
+
+  const fecha = formulario
+    .querySelector("#fechaCita").value;
+
+  const hora = formulario
+    .querySelector("#horaCita").value;
+
+  const mensaje = formulario
+    .querySelector("#mensajeCita");
+
+  const boton = formulario
+    .querySelector("#solicitarCita");
+
+  if (
+    medicoId !== disponibilidadCita.medicoId ||
+    !fecha ||
+    !hora
+  ) {
+
+    mensaje.textContent =
+      "Consulta la disponibilidad y completa los datos.";
+
+    return;
+
+  }
+
+  if (
+    new Date(fecha + "T" + hora + ":00")
+      <= new Date()
+  ) {
+
+    mensaje.textContent =
+      "Selecciona una fecha y hora futuras.";
+
+    return;
+
+  }
+
+  boton.disabled = true;
+
+  mensaje.textContent =
+    "Registrando solicitud...";
+
+  try {
+
+    await addDoc(
+
+      collection(db, "citas"),
+
+      {
+
+        pacienteId,
+
+        medicoId,
+
+        fecha,
+
+        hora,
+
+        estado: "pendiente",
+
+        creado: serverTimestamp(),
+
+        actualizado: serverTimestamp()
+
+      }
+
+    );
+
+    if (
+      uidActual !== pacienteId ||
+      !formulario.isConnected
+    ) return;
+
+    formulario.reset();
+
+    disponibilidadCita = null;
+
+    formulario.querySelector("#fechaCita")
+      .disabled = true;
+
+    formulario.querySelector("#horaCita")
+      .disabled = true;
+
+    formulario.querySelector(
+      "#resultadoDisponibilidadCita"
+    ).textContent = "";
+
+    mensaje.textContent =
+      "Solicitud registrada correctamente.";
+
+    await cargarCitas();
+
+  } catch (error) {
+
+    console.error(
+      "Error al registrar cita:",
+      error
+    );
+
+    mensaje.textContent =
+      "No se pudo registrar la cita. Revisa Firebase.";
+
+    boton.disabled = false;
+
+  }
+
+}
+
+
+/* CONSULTAR CITAS REGISTRADAS */
+
+async function cargarCitas() {
+
+  const contenedor =
+    document.getElementById("listaCitas");
+
+  if (!contenedor || !uidActual) return;
+
+  const uid = uidActual;
+
+  const medico = rolActual === "medico";
+
+  const filtro =
+    document.getElementById("filtroCitas")?.value
+      || "todas";
+
+  contenedor.textContent =
+    "Cargando citas...";
+
+  try {
+
+    const consulta = query(
+
+      collection(db, "citas"),
+
+      where(
+        medico ? "medicoId" : "pacienteId",
+        "==",
+        uid
+      )
+
+    );
+
+    const resultado = await getDocs(consulta);
+
+    if (
+      uidActual !== uid ||
+      !contenedor.isConnected
+    ) return;
+
+    let registros = resultado.docs.map(item => ({
+
+      ...item.data(),
+
+      id: item.id
+
+    }));
+
+    if (filtro !== "todas") {
+
+      registros = registros.filter(
+        item => item.estado === filtro
+      );
+
+    }
+
+    registros.sort((a, b) => {
+
+      return (a.fecha + a.hora).localeCompare(
+        b.fecha + b.hora
+      );
+
+    });
+
+    if (registros.length === 0) {
+
+      contenedor.innerHTML = `
+
+        <div class="empty-state">
+
+          No hay citas registradas para este estado.
+
+        </div>
+
+      `;
+
+      return;
+
+    }
+
+    contenedor.innerHTML = registros.map(item => `
+
+      <article class="cita-item">
+
+        <div class="cita-icono">
+
+          <i class="fa-solid fa-calendar-check"></i>
+
+        </div>
+
+        <div class="cita-informacion">
+
+          <h3>Consulta médica</h3>
+
+          <p>
+
+            Fecha: ${escapar(item.fecha)}
+
+          </p>
+
+          <p>
+
+            Hora: ${escapar(item.hora)}
+
+          </p>
+
+          <small>
+
+            ${medico ? "Paciente" : "Médico"}:
+
+            ${escapar(
+              medico
+                ? item.pacienteId
+                : item.medicoId
+            )}
+
+          </small>
+
+          <span class="cita-estado
+                       cita-${escapar(item.estado)}">
+
+            ${escapar(
+              estadosCitas[item.estado]
+              || item.estado
+            )}
+
+          </span>
+
+        </div>
+
+        <div class="cita-acciones">
+
+          ${medico && item.estado === "pendiente" ? `
+
+            <button
+              type="button"
+              class="btn primary"
+              data-cita="${escapar(item.id)}"
+              data-estado-cita="confirmada">
+
+              Confirmar
+
+            </button>
+
+            <button
+              type="button"
+              class="btn"
+              data-cita="${escapar(item.id)}"
+              data-estado-cita="rechazada">
+
+              Rechazar
+
+            </button>
+
+          ` : ""}
+
+          ${(
+            item.estado === "confirmada" ||
+            (!medico && item.estado === "pendiente")
+          ) ? `
+
+            <button
+              type="button"
+              class="btn cita-btn-cancelar"
+              data-cita="${escapar(item.id)}"
+              data-estado-cita="cancelada">
+
+              Cancelar
+
+            </button>
+
+          ` : ""}
+
+        </div>
+
+      </article>
+
+    `).join("");
+
+  } catch (error) {
+
+    console.error(
+      "Error al consultar citas:",
+      error
+    );
+
+    contenedor.textContent =
+      "No se pudieron consultar las citas.";
+
+  }
+
+}
+
+
+/* ACTUALIZAR ESTADO DE UNA CITA */
+
+async function actualizarEstadoCita(
+  citaId,
+  estado,
+  boton
+) {
+
+  if (!uidActual || !sesionLista) return;
+
+  if (![
+    "confirmada",
+    "rechazada",
+    "cancelada"
+  ].includes(estado)) return;
+
+  const confirmar = window.confirm(
+
+    "¿Deseas cambiar el estado de esta cita a " +
+    estadosCitas[estado].toLowerCase() + "?"
+
+  );
+
+  if (!confirmar) return;
+
+  const uid = uidActual;
+
+  boton.disabled = true;
+
+  try {
+
+    await updateDoc(
+
+      doc(db, "citas", citaId),
+
+      {
+
+        estado,
+
+        actualizado: serverTimestamp()
+
+      }
+
+    );
+
+    if (uidActual === uid) {
+
+      await cargarCitas();
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Error al actualizar cita:",
+      error
+    );
+
+    alert(
+      "No se pudo actualizar el estado de la cita."
+    );
+
+  } finally {
+
+    boton.disabled = false;
+
+  }
+
 }
 /* DIRECTORIO */
 
+/* ==========================================
+   DIRECTORIO MÉDICO CONECTADO A FIREBASE
+   SALUD 360°
+========================================== */
+
+
+/* ALMACENAMIENTO TEMPORAL DEL DIRECTORIO */
+
+let medicosDirectorio = [];
+
+/* MÉDICO SELECCIONADO PARA SOLICITAR CITA */
+
+let medicoSeleccionadoCita = null;
+
+
+/* INTERFAZ PRINCIPAL DEL DIRECTORIO */
+
 function directorio() {
+
+  medicosDirectorio = [];
+
   page.innerHTML = `
+
     ${encabezado(
-      "Red de Servicios Salud 360°",
-      "Hospitales, laboratorios y seguros médicos"
+      "Directorio médico",
+      "Consulta los profesionales registrados en Salud 360°"
     )}
 
-    <div class="results-grid">
-      ${tarjeta("Hospitales y Clínicas", `
-        <p>Directorio de instituciones médicas.</p>
-        <span class="pill">Catálogo de demostración</span>
-      `)}
+    <section class="directorio-banner">
 
-      ${tarjeta("Laboratorios", `
-        <p>Consulta servicios de análisis clínicos.</p>
-        <span class="pill">Catálogo de demostración</span>
-      `)}
+      <div>
 
-      ${tarjeta("Seguros Médicos", `
-        <p>Información sobre coberturas y aseguradoras.</p>
-        <span class="pill">Catálogo de demostración</span>
-      `)}
+        <h2>Encuentra a tu especialista</h2>
+
+        <p>
+          Conoce los perfiles profesionales
+          publicados en Salud 360°.
+        </p>
+
+      </div>
+
+      <i class="fa-solid fa-stethoscope"></i>
+
+    </section>
+
+
+    <article class="card section-space">
+
+      <div class="directorio-encabezado">
+
+        <div>
+
+          <h2>Profesionales registrados</h2>
+
+          <p id="totalMedicosDirectorio">
+
+            Consultando profesionales...
+
+          </p>
+
+        </div>
+
+        <button
+          type="button"
+          id="actualizarDirectorio"
+          class="btn">
+
+          <i class="fa-solid fa-rotate"></i>
+
+          Actualizar
+
+        </button>
+
+      </div>
+
+
+      <!-- ==========================================
+     BÚSQUEDA Y FILTROS DEL DIRECTORIO
+========================================== -->
+
+<div class="directorio-filtros">
+
+  <!-- BUSCADOR DE MÉDICOS -->
+
+  <div class="form-field">
+
+    <label for="buscarMedicoDirectorio">
+
+      Buscar profesional
+
+    </label>
+
+    <div class="directorio-buscador">
+
+      <i class="fa-solid fa-magnifying-glass"></i>
+
+      <input
+        type="search"
+        id="buscarMedicoDirectorio"
+        placeholder="Nombre, especialidad o consultorio"
+        maxlength="100"
+        autocomplete="off">
+
     </div>
+
+  </div>
+
+
+  <!-- FILTRO POR ESPECIALIDAD -->
+
+  <div class="form-field">
+
+    <label for="filtroEspecialidadDirectorio">
+
+      Especialidad médica
+
+    </label>
+
+    <select id="filtroEspecialidadDirectorio">
+
+      <option value="todas">
+
+        Todas las especialidades
+
+      </option>
+
+    </select>
+
+  </div>
+
+
+  <!-- ORDENAR PROFESIONALES -->
+
+  <div class="form-field">
+
+    <label for="ordenDirectorio">
+
+      Ordenar por
+
+    </label>
+
+    <select id="ordenDirectorio">
+
+      <option value="az">
+
+        Nombre: A - Z
+
+      </option>
+
+      <option value="za">
+
+        Nombre: Z - A
+
+      </option>
+
+      <option value="experiencia">
+
+        Mayor experiencia
+
+      </option>
+
+      <option value="menor-experiencia">
+
+        Menor experiencia
+
+      </option>
+
+    </select>
+
+  </div>
+
+
+  <!-- LIMPIAR FILTROS -->
+
+  <button
+    type="button"
+    id="limpiarFiltrosDirectorio"
+    class="btn directorio-limpiar">
+
+    <i class="fa-solid fa-filter-circle-xmark"></i>
+
+    Limpiar filtros
+
+  </button>
+
+</div>
+
+      <div id="listaDirectorioMedico"
+           class="directorio-grid"
+           aria-live="polite">
+
+        <div class="empty-state">
+
+          Cargando directorio médico...
+
+        </div>
+
+      </div>
+
+    </article>
+
+
+    <section id="detalleMedicoDirectorio"
+             hidden>
+    </section>
+
+
+    <p class="demo-note">
+
+      Directorio de demostración.
+      Los perfiles no representan profesionales
+      cuya identidad haya sido comprobada.
+
+    </p>
+
   `;
+
+  cargarDirectorioMedico();
+
+}
+
+
+/* ==========================================
+   CONSULTAR MÉDICOS DESDE FIREBASE
+========================================== */
+
+async function cargarDirectorioMedico() {
+
+  if (!uidActual || !sesionLista) return;
+
+  const uid = uidActual;
+
+  const contenedor = document.getElementById(
+    "listaDirectorioMedico"
+  );
+
+  const contador = document.getElementById(
+    "totalMedicosDirectorio"
+  );
+
+  const boton = document.getElementById(
+    "actualizarDirectorio"
+  );
+
+  if (!contenedor || !contador || !boton) return;
+
+  boton.disabled = true;
+
+  medicosDirectorio = [];
+
+  contador.textContent =
+    "Consultando profesionales...";
+
+  contenedor.innerHTML = `
+
+    <div class="empty-state">
+
+      <i class="fa-solid fa-spinner fa-spin"></i>
+
+      Cargando directorio médico...
+
+    </div>
+
+  `;
+
+  try {
+
+    /* CONSULTAR ÚNICAMENTE PERFILES VISIBLES */
+
+    const consulta = query(
+
+      collection(db, "directorioMedico"),
+
+      where("visible", "==", true)
+
+    );
+
+    const resultado = await getDocs(consulta);
+
+
+    /* COMPROBAR SESIÓN Y NAVEGACIÓN */
+
+    if (
+      uidActual !== uid ||
+      !contenedor.isConnected
+    ) return;
+
+
+    /* ORGANIZAR LOS DOCUMENTOS */
+
+    medicosDirectorio = resultado.docs.map(
+      documento => ({
+
+        ...documento.data(),
+
+        id: documento.id
+
+      })
+    );
+
+
+    /* ORDENAR ALFABÉTICAMENTE */
+
+    medicosDirectorio.sort((a, b) => {
+
+      return String(a.nombre || "")
+        .localeCompare(
+          String(b.nombre || ""),
+          "es",
+          { sensitivity: "base" }
+        );
+
+    });
+
+
+    /* CARGAR ESPECIALIDADES DISPONIBLES */
+
+cargarEspecialidadesDirectorio();
+
+
+/* HABILITAR CONSULTA DE RESULTADOS */
+
+boton.disabled = false;
+
+
+/* APLICAR BÚSQUEDA Y FILTROS */
+
+aplicarFiltrosDirectorio();
+
+  } catch (error) {
+
+    console.error(
+      "Error al consultar directorio médico:",
+      error
+    );
+
+    if (
+      uidActual !== uid ||
+      !contenedor.isConnected
+    ) return;
+
+    contador.textContent =
+      "No se pudo consultar el directorio.";
+
+    contenedor.innerHTML = `
+
+      <div class="empty-state">
+
+        <i class="fa-solid fa-circle-exclamation"></i>
+
+        <h3>Error de conexión</h3>
+
+        <p>
+
+          No fue posible cargar los perfiles
+          profesionales. Intenta nuevamente.
+
+        </p>
+
+      </div>
+
+    `;
+
+  } finally {
+
+    boton.disabled = false;
+
+  }
+
+}
+
+/* ==========================================
+   BÚSQUEDA Y FILTROS DEL DIRECTORIO MÉDICO
+   SALUD 360°
+========================================== */
+
+
+/* NORMALIZAR TEXTOS PARA LAS BÚSQUEDAS */
+
+function normalizarTextoDirectorio(texto) {
+
+  return String(texto || "")
+
+    .normalize("NFD")
+
+    .replace(/[\u0300-\u036f]/g, "")
+
+    .toLowerCase()
+
+    .trim();
+
+}
+
+
+/* ==========================================
+   GENERAR ESPECIALIDADES AUTOMÁTICAMENTE
+========================================== */
+
+function cargarEspecialidadesDirectorio() {
+
+  const selector = document.getElementById(
+    "filtroEspecialidadDirectorio"
+  );
+
+  if (!selector) return;
+
+
+  /* CONSERVAR ESPECIALIDAD SELECCIONADA */
+
+  const seleccionAnterior = selector.value;
+
+
+  /* OBTENER ESPECIALIDADES SIN DUPLICADOS */
+
+  const especialidades = new Map();
+
+  medicosDirectorio.forEach(medico => {
+
+    const especialidad = String(
+      medico.especialidad || ""
+    ).trim();
+
+    if (!especialidad) return;
+
+    const clave = normalizarTextoDirectorio(
+      especialidad
+    );
+
+    if (!especialidades.has(clave)) {
+
+      especialidades.set(
+        clave,
+        especialidad
+      );
+
+    }
+
+  });
+
+
+  /* ORDENAR ESPECIALIDADES */
+
+  const listaEspecialidades = Array.from(
+    especialidades.entries()
+  );
+
+  listaEspecialidades.sort((a, b) => {
+
+    return a[1].localeCompare(
+      b[1],
+      "es",
+      { sensitivity: "base" }
+    );
+
+  });
+
+
+  /* LIMPIAR OPCIONES ANTERIORES */
+
+  selector.innerHTML = "";
+
+
+  /* AGREGAR OPCIÓN GENERAL */
+
+  const opcionTodas =
+    document.createElement("option");
+
+  opcionTodas.value = "todas";
+
+  opcionTodas.textContent =
+    "Todas las especialidades";
+
+  selector.appendChild(opcionTodas);
+
+
+  /* AGREGAR ESPECIALIDADES DE FIREBASE */
+
+  listaEspecialidades.forEach(
+    ([clave, especialidad]) => {
+
+      const opcion =
+        document.createElement("option");
+
+      opcion.value = "especialidad:" + clave;
+
+      opcion.textContent = especialidad;
+
+      selector.appendChild(opcion);
+
+    }
+  );
+
+
+  /* RECUPERAR SELECCIÓN SI TODAVÍA EXISTE */
+
+  const existeSeleccion = Array.from(
+    selector.options
+  ).some(opcion => {
+
+    return opcion.value === seleccionAnterior;
+
+  });
+
+  selector.value = existeSeleccion
+
+    ? seleccionAnterior
+
+    : "todas";
+
+}
+
+
+/* ==========================================
+   APLICAR BÚSQUEDA Y FILTROS
+========================================== */
+
+function aplicarFiltrosDirectorio() {
+
+  if (!sesionLista || !uidActual) return;
+
+  const buscador = document.getElementById(
+    "buscarMedicoDirectorio"
+  );
+
+  const filtro = document.getElementById(
+    "filtroEspecialidadDirectorio"
+  );
+
+  const orden = document.getElementById(
+    "ordenDirectorio"
+  );
+
+  const contenedor = document.getElementById(
+    "listaDirectorioMedico"
+  );
+
+  const contador = document.getElementById(
+    "totalMedicosDirectorio"
+  );
+
+  const actualizar = document.getElementById(
+    "actualizarDirectorio"
+  );
+
+  if (
+    !buscador ||
+    !filtro ||
+    !orden ||
+    !contenedor ||
+    !contador
+  ) return;
+
+
+  /* EVITAR FILTRAR DURANTE LA CARGA */
+
+  if (actualizar?.disabled) return;
+
+
+  /* OBTENER CRITERIOS DE BÚSQUEDA */
+
+  const texto = normalizarTextoDirectorio(
+    buscador.value
+  );
+
+  const especialidadSeleccionada =
+    filtro.value;
+
+  const tipoOrden = orden.value;
+
+
+  /* SEPARAR PALABRAS DE BÚSQUEDA */
+
+  const palabras = texto
+    .split(/\s+/)
+    .filter(Boolean);
+
+
+  /* FILTRAR PROFESIONALES */
+
+  let resultados = medicosDirectorio.filter(
+    medico => {
+
+      const nombre = normalizarTextoDirectorio(
+        medico.nombre
+      );
+
+      const especialidad =
+        normalizarTextoDirectorio(
+          medico.especialidad
+        );
+
+      const consultorio =
+        normalizarTextoDirectorio(
+          medico.consultorio
+        );
+
+
+      /* COMBINAR CAMPOS DE BÚSQUEDA */
+
+      const contenido = [
+
+        nombre,
+
+        especialidad,
+
+        consultorio
+
+      ].join(" ");
+
+
+      /* COMPROBAR TODAS LAS PALABRAS */
+
+      const coincideBusqueda = palabras.every(
+        palabra => contenido.includes(palabra)
+      );
+
+
+      /* COMPROBAR ESPECIALIDAD */
+
+      const coincideEspecialidad =
+
+        especialidadSeleccionada === "todas"
+
+        || especialidadSeleccionada ===
+          "especialidad:" + especialidad;
+
+
+      return coincideBusqueda
+
+        && coincideEspecialidad;
+
+    }
+  );
+
+
+  /* ==========================================
+     ORDENAR RESULTADOS
+  ========================================== */
+
+  resultados.sort((a, b) => {
+
+    const nombreA = String(a.nombre || "");
+
+    const nombreB = String(b.nombre || "");
+
+    const experienciaA =
+      Number.isInteger(a.experiencia)
+        ? a.experiencia
+        : 0;
+
+    const experienciaB =
+      Number.isInteger(b.experiencia)
+        ? b.experiencia
+        : 0;
+
+    const ordenNombre = nombreA.localeCompare(
+      nombreB,
+      "es",
+      { sensitivity: "base" }
+    );
+
+
+    /* NOMBRE DE Z A A */
+
+    if (tipoOrden === "za") {
+
+      return -ordenNombre;
+
+    }
+
+
+    /* MAYOR EXPERIENCIA */
+
+    if (tipoOrden === "experiencia") {
+
+      return experienciaB - experienciaA
+
+        || ordenNombre;
+
+    }
+
+
+    /* MENOR EXPERIENCIA */
+
+    if (tipoOrden === "menor-experiencia") {
+
+      return experienciaA - experienciaB
+
+        || ordenNombre;
+
+    }
+
+
+    /* NOMBRE DE A A Z */
+
+    return ordenNombre;
+
+  });
+
+
+  /* CERRAR DETALLE DEL MÉDICO ANTERIOR */
+
+  cerrarPerfilMedicoDirectorio();
+
+
+  /* MOSTRAR RESULTADOS */
+
+  mostrarMedicosDirectorio(resultados);
+
+
+  /* ACTUALIZAR CONTADOR DE RESULTADOS */
+
+  contador.textContent =
+
+    `${resultados.length} de ` +
+
+    `${medicosDirectorio.length} profesionales`;
+
+
+  /* MENSAJE CUANDO NO EXISTEN COINCIDENCIAS */
+
+  if (
+    resultados.length === 0 &&
+    medicosDirectorio.length > 0
+  ) {
+
+    contenedor.innerHTML = `
+
+      <div class="empty-state
+                  directorio-sin-resultados">
+
+        <i class="fa-solid
+                  fa-magnifying-glass"></i>
+
+        <h3>
+
+          No se encontraron profesionales
+
+        </h3>
+
+        <p>
+
+          Intenta con otro nombre,
+          especialidad o consultorio.
+
+        </p>
+
+        <button
+          type="button"
+          class="btn primary"
+          data-limpiar-directorio>
+
+          Limpiar búsqueda
+
+        </button>
+
+      </div>
+
+    `;
+
+  }
+
+}
+
+
+/* ==========================================
+   LIMPIAR FILTROS DEL DIRECTORIO
+========================================== */
+
+function limpiarFiltrosDirectorio() {
+
+  const buscador = document.getElementById(
+    "buscarMedicoDirectorio"
+  );
+
+  const especialidad = document.getElementById(
+    "filtroEspecialidadDirectorio"
+  );
+
+  const orden = document.getElementById(
+    "ordenDirectorio"
+  );
+
+  if (!buscador || !especialidad || !orden) {
+
+    return;
+
+  }
+
+
+  /* RESTABLECER VALORES */
+
+  buscador.value = "";
+
+  especialidad.value = "todas";
+
+  orden.value = "az";
+
+
+  /* MOSTRAR TODOS LOS PROFESIONALES */
+
+  aplicarFiltrosDirectorio();
+
+}
+
+/* ==========================================
+   MOSTRAR TARJETAS DE LOS MÉDICOS
+========================================== */
+
+function mostrarMedicosDirectorio(medicos) {
+
+  const contenedor = document.getElementById(
+    "listaDirectorioMedico"
+  );
+
+  const contador = document.getElementById(
+    "totalMedicosDirectorio"
+  );
+
+  if (!contenedor || !contador) return;
+
+
+  /* ACTUALIZAR CONTADOR */
+
+  contador.textContent = medicos.length === 1
+
+    ? "1 profesional registrado"
+
+    : `${medicos.length} profesionales registrados`;
+
+
+  /* DIRECTORIO SIN REGISTROS */
+
+  if (medicos.length === 0) {
+
+    contenedor.innerHTML = `
+
+      <div class="empty-state">
+
+        <i class="fa-solid fa-user-doctor"></i>
+
+        <h3>No hay médicos publicados</h3>
+
+        <p>
+
+          Los profesionales aparecerán aquí
+          cuando publiquen su perfil médico.
+
+        </p>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  /* GENERAR TARJETAS PROFESIONALES */
+
+  contenedor.innerHTML = medicos.map(medico => {
+
+    const nombre =
+      medico.nombre || "Profesional médico";
+
+    const especialidad =
+      medico.especialidad || "Sin especialidad registrada";
+
+    const iniciales = obtenerIniciales(nombre);
+
+    const experiencia =
+      Number.isInteger(medico.experiencia)
+        ? medico.experiencia
+        : 0;
+
+    return `
+
+      <article class="directorio-card">
+
+        <div class="directorio-perfil">
+
+          <div class="directorio-avatar">
+
+            ${escapar(iniciales)}
+
+          </div>
+
+          <div class="directorio-identidad">
+
+            <h3>
+
+              ${escapar(nombre)}
+
+            </h3>
+
+            <p class="directorio-especialidad">
+
+              ${escapar(especialidad)}
+
+            </p>
+
+            <span class="directorio-no-verificado">
+
+              <i class="fa-solid fa-circle-info"></i>
+
+              Perfil de demostración
+
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div class="directorio-informacion">
+
+          <p>
+
+            <i class="fa-solid fa-briefcase-medical"></i>
+
+            ${escapar(experiencia)}
+            años de experiencia declarada
+
+          </p>
+
+          <p>
+
+            <i class="fa-solid fa-location-dot"></i>
+
+            ${escapar(
+              medico.consultorio ||
+              "Consultorio no especificado"
+            )}
+
+          </p>
+
+        </div>
+
+
+        <div class="directorio-acciones">
+
+  <!-- CONSULTAR PERFIL PROFESIONAL -->
+
+  <button
+    type="button"
+    class="btn"
+    data-ver-medico="${escapar(medico.id)}">
+
+    <i class="fa-solid fa-user-doctor"></i>
+
+    Ver perfil profesional
+
+  </button>
+
+
+  <!-- SOLICITAR CITA MÉDICA -->
+
+  ${rolActual === "paciente" ? `
+
+    <button
+      type="button"
+      class="btn primary"
+      data-solicitar-cita="${escapar(medico.id)}">
+
+      <i class="fa-solid fa-calendar-check"></i>
+
+      Solicitar cita
+
+    </button>
+
+  ` : ""}
+
+</div>
+
+      </article>
+
+    `;
+
+  }).join("");
+
+}
+
+
+/* ==========================================
+   CONSULTAR PERFIL PROFESIONAL INDIVIDUAL
+========================================== */
+
+async function verPerfilMedicoDirectorio(medicoId) {
+
+  if (!uidActual || !sesionLista) return;
+
+  if (!medicoId || medicoId.includes("/")) return;
+
+  const uid = uidActual;
+
+  const contenedor = document.getElementById(
+    "detalleMedicoDirectorio"
+  );
+
+  if (!contenedor) return;
+
+  contenedor.hidden = false;
+
+  contenedor.dataset.medicoId = medicoId;
+
+  contenedor.innerHTML = `
+
+    <article class="card section-space">
+
+      <p>Cargando perfil profesional...</p>
+
+      <button
+        type="button"
+        id="cerrarPerfilDirectorio"
+        class="btn">
+
+        Cerrar
+
+      </button>
+
+    </article>
+
+  `;
+
+  try {
+
+    const referencia = doc(
+      db,
+      "directorioMedico",
+      medicoId
+    );
+
+    const resultado = await getDoc(referencia);
+
+
+    /* COMPROBAR QUE LA CONSULTA SIGA VIGENTE */
+
+    if (
+      uidActual !== uid ||
+      !contenedor.isConnected ||
+      contenedor.hidden ||
+      contenedor.dataset.medicoId !== medicoId
+    ) return;
+
+
+    /* COMPROBAR VISIBILIDAD DEL PERFIL */
+
+    if (
+      !resultado.exists() ||
+      resultado.data().visible !== true
+    ) {
+
+      throw new Error(
+        "El perfil ya no está disponible."
+      );
+
+    }
+
+    const medico = resultado.data();
+
+    const nombre =
+      medico.nombre || "Profesional médico";
+
+    const iniciales =
+      obtenerIniciales(nombre);
+
+
+    /* MOSTRAR INFORMACIÓN PROFESIONAL */
+
+    contenedor.innerHTML = `
+
+      <article class="card section-space
+                      directorio-detalle">
+
+        <div class="directorio-detalle-encabezado">
+
+          <h2>Perfil profesional</h2>
+
+          <button
+            type="button"
+            id="cerrarPerfilDirectorio"
+            class="btn"
+            aria-label="Cerrar perfil profesional">
+
+            <i class="fa-solid fa-xmark"></i>
+
+            Cerrar
+
+          </button>
+
+        </div>
+
+
+        <div class="directorio-perfil">
+
+          <div class="directorio-avatar">
+
+            ${escapar(iniciales)}
+
+          </div>
+
+          <div class="directorio-identidad">
+
+            <h3>${escapar(nombre)}</h3>
+
+            <p class="directorio-especialidad">
+
+              ${escapar(
+                medico.especialidad ||
+                "Sin especialidad registrada"
+              )}
+
+            </p>
+
+            <span class="directorio-no-verificado">
+
+              Perfil de demostración sin verificar
+
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div class="directorio-descripcion">
+
+          <h3>Acerca del profesional</h3>
+
+          <p>
+
+            ${escapar(
+              medico.descripcion ||
+              "No hay descripción profesional."
+            )}
+
+          </p>
+
+        </div>
+
+
+        <div class="directorio-informacion">
+
+          <h3>Información profesional</h3>
+
+          <p>
+
+            <i class="fa-solid fa-briefcase-medical"></i>
+
+            Experiencia declarada:
+
+            ${escapar(medico.experiencia || 0)}
+            años
+
+          </p>
+
+          <p>
+
+            <i class="fa-solid fa-location-dot"></i>
+
+            Consultorio:
+
+            ${escapar(
+              medico.consultorio ||
+              "No especificado"
+            )}
+
+          </p>
+
+        </div>
+
+
+        <!-- DISPONIBILIDAD DEL PROFESIONAL -->
+
+${rolActual === "paciente" ? `
+
+  <div class="directorio-disponibilidad"
+       id="disponibilidadPerfilDirectorio">
+
+    <h3>Disponibilidad médica</h3>
+
+    <p>Consultando horarios de atención...</p>
+
+  </div>
+
+  <div class="directorio-acciones">
+
+    <button
+      type="button"
+      class="btn primary"
+      data-solicitar-cita="${escapar(medicoId)}">
+
+      <i class="fa-solid fa-calendar-check"></i>
+
+      Solicitar cita médica
+
+    </button>
+
+  </div>
+
+` : ""}
+      </article>
+
+    `;
+
+    /* CONSULTAR DISPONIBILIDAD DEL MÉDICO */
+
+if (rolActual === "paciente") {
+
+  cargarDisponibilidadPerfilDirectorio(
+    medicoId
+  );
+
+}
+
+    contenedor.scrollIntoView({
+
+      block: "start"
+
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Error al consultar perfil profesional:",
+      error
+    );
+
+    if (
+      uidActual !== uid ||
+      !contenedor.isConnected ||
+      contenedor.hidden ||
+      contenedor.dataset.medicoId !== medicoId
+    ) return;
+
+    contenedor.innerHTML = `
+
+      <article class="card section-space">
+
+        <p>
+
+          El perfil profesional no está disponible
+          o no pudo consultarse.
+
+        </p>
+
+        <button
+          type="button"
+          id="cerrarPerfilDirectorio"
+          class="btn">
+
+          Cerrar
+
+        </button>
+
+      </article>
+
+    `;
+
+  }
+
+}
+
+/* ==========================================
+   INTEGRACIÓN DEL DIRECTORIO CON LAS CITAS
+   SALUD 360°
+========================================== */
+
+
+/* CONSULTAR DISPONIBILIDAD DEL PROFESIONAL */
+
+async function cargarDisponibilidadPerfilDirectorio(
+  medicoId
+) {
+
+  if (
+    rolActual !== "paciente" ||
+    !uidActual ||
+    !medicoId
+  ) return;
+
+  const uid = uidActual;
+
+  const contenedor = document.getElementById(
+    "disponibilidadPerfilDirectorio"
+  );
+
+  if (!contenedor) return;
+
+  try {
+
+    const resultado = await getDoc(
+
+      doc(db, "disponibilidad", medicoId)
+
+    );
+
+
+    /* COMPROBAR SESIÓN Y NAVEGACIÓN */
+
+    if (
+      uidActual !== uid ||
+      !contenedor.isConnected
+    ) return;
+
+
+    /* COMPROBAR DISPONIBILIDAD ACTIVA */
+
+    if (
+      !resultado.exists() ||
+      resultado.data().activo !== true
+    ) {
+
+      contenedor.innerHTML = `
+
+        <h3>Disponibilidad médica</h3>
+
+        <p class="directorio-sin-disponibilidad">
+
+          El profesional no tiene horarios
+          de atención disponibles.
+
+        </p>
+
+      `;
+
+      return;
+
+    }
+
+    const horario = resultado.data();
+
+
+    /* FORMATEAR DÍAS DE ATENCIÓN */
+
+    const nombresDias = {
+
+      lunes: "Lunes",
+
+      martes: "Martes",
+
+      miercoles: "Miércoles",
+
+      jueves: "Jueves",
+
+      viernes: "Viernes",
+
+      sabado: "Sábado",
+
+      domingo: "Domingo"
+
+    };
+
+    const dias = Array.isArray(horario.dias)
+
+      ? horario.dias.map(
+          dia => nombresDias[dia] || dia
+        ).join(", ")
+
+      : "No especificados";
+
+
+    /* MOSTRAR HORARIOS */
+
+    contenedor.innerHTML = `
+
+      <h3>Disponibilidad médica</h3>
+
+      <span class="directorio-disponible">
+
+        <i class="fa-solid fa-circle-check"></i>
+
+        Disponibilidad activa
+
+      </span>
+
+      <p>
+
+        <i class="fa-solid fa-calendar-days"></i>
+
+        <strong>Días de atención:</strong>
+
+        ${escapar(dias)}
+
+      </p>
+
+      <p>
+
+        <i class="fa-solid fa-clock"></i>
+
+        <strong>Horario:</strong>
+
+        ${escapar(horario.horaInicio)}
+
+        a
+
+        ${escapar(horario.horaFin)}
+
+      </p>
+
+      <p>
+
+        <i class="fa-solid fa-hourglass-half"></i>
+
+        <strong>Duración de consulta:</strong>
+
+        ${escapar(horario.duracion)} minutos
+
+      </p>
+
+    `;
+
+  } catch (error) {
+
+    console.error(
+      "Error al consultar disponibilidad:",
+      error
+    );
+
+    if (
+      uidActual !== uid ||
+      !contenedor.isConnected
+    ) return;
+
+    contenedor.innerHTML = `
+
+      <h3>Disponibilidad médica</h3>
+
+      <p class="directorio-sin-disponibilidad">
+
+        No fue posible consultar los horarios
+        del profesional.
+
+      </p>
+
+    `;
+
+  }
+
+}
+
+
+/* ==========================================
+   SELECCIONAR MÉDICO PARA UNA CITA
+========================================== */
+
+function solicitarCitaDesdeDirectorio(medicoId) {
+
+  if (
+    rolActual !== "paciente" ||
+    !sesionLista ||
+    !uidActual
+  ) return;
+
+
+  /* BUSCAR MÉDICO SELECCIONADO */
+
+  const medico = medicosDirectorio.find(
+
+    profesional => profesional.id === medicoId
+
+  );
+
+  if (!medico) {
+
+    window.alert(
+
+      "No se encontró el perfil profesional."
+
+    );
+
+    return;
+
+  }
+
+
+  /* GUARDAR SELECCIÓN TEMPORAL */
+
+  medicoSeleccionadoCita = {
+
+    pacienteId: uidActual,
+
+    medicoId: medico.id,
+
+    nombre: medico.nombre ||
+      "Profesional médico",
+
+    especialidad: medico.especialidad ||
+      "Sin especialidad registrada"
+
+  };
+
+
+  /* NAVEGAR AL MÓDULO DE CITAS */
+
+  location.hash = "#citas";
+
+}
+
+
+/* ==========================================
+   CARGAR MÉDICO SELECCIONADO EN CITAS
+========================================== */
+
+async function cargarMedicoSeleccionadoCita() {
+
+  if (
+    rolActual !== "paciente" ||
+    !uidActual ||
+    !medicoSeleccionadoCita
+  ) return;
+
+  const uid = uidActual;
+
+  const seleccion = medicoSeleccionadoCita;
+
+
+  /* EVITAR REUTILIZAR SELECCIONES ANTERIORES */
+
+  medicoSeleccionadoCita = null;
+
+  if (seleccion.pacienteId !== uid) return;
+
+
+  /* LOCALIZAR FORMULARIO DE CITAS */
+
+  const formulario = document.getElementById(
+    "formCita"
+  );
+
+  const campoMedico = document.getElementById(
+    "medicoCita"
+  );
+
+  const botonConsultar = document.getElementById(
+    "consultarDisponibilidadCita"
+  );
+
+  if (
+    !formulario ||
+    !campoMedico ||
+    !botonConsultar
+  ) return;
+
+
+  /* COMPROBAR QUE EL PERFIL SIGA PUBLICADO */
+
+  try {
+
+    const resultado = await getDoc(
+
+      doc(
+        db,
+        "directorioMedico",
+        seleccion.medicoId
+      )
+
+    );
+
+    if (
+      uidActual !== uid ||
+      !formulario.isConnected
+    ) return;
+
+    if (
+      !resultado.exists() ||
+      resultado.data().visible !== true
+    ) {
+
+      throw new Error(
+        "El perfil ya no está publicado."
+      );
+
+    }
+
+    const medico = resultado.data();
+
+
+    /* ASIGNAR UID AUTOMÁTICAMENTE */
+
+    campoMedico.value = seleccion.medicoId;
+
+    campoMedico.readOnly = true;
+
+
+    /* MOSTRAR INFORMACIÓN DEL PROFESIONAL */
+
+    const tarjeta = document.createElement(
+      "div"
+    );
+
+    tarjeta.className =
+      "cita-medico-seleccionado";
+
+    tarjeta.id =
+      "medicoSeleccionadoTarjeta";
+
+    tarjeta.innerHTML = `
+
+      <div class="directorio-avatar">
+
+        ${escapar(
+          obtenerIniciales(medico.nombre)
+        )}
+
+      </div>
+
+      <div>
+
+        <span>Médico seleccionado</span>
+
+        <h3>${escapar(medico.nombre)}</h3>
+
+        <p>
+
+          ${escapar(
+            medico.especialidad ||
+            "Sin especialidad registrada"
+          )}
+
+        </p>
+
+        <small>
+
+          Perfil de demostración
+
+        </small>
+
+      </div>
+
+      <button
+        type="button"
+        id="cambiarMedicoCita"
+        class="btn">
+
+        Cambiar médico
+
+      </button>
+
+    `;
+
+    formulario.prepend(tarjeta);
+
+
+    /* OCULTAR EL CAMPO TÉCNICO DEL UID */
+
+    campoMedico.hidden = true;
+
+    const etiqueta = formulario.querySelector(
+      'label[for="medicoCita"]'
+    );
+
+    if (etiqueta) {
+
+      etiqueta.hidden = true;
+
+    }
+
+
+    /* CONSULTAR HORARIOS AUTOMÁTICAMENTE */
+
+    await consultarDisponibilidadCita();
+
+  } catch (error) {
+
+    console.error(
+      "Error al seleccionar médico:",
+      error
+    );
+
+    if (
+      uidActual !== uid ||
+      !formulario.isConnected
+    ) return;
+
+    const mensaje = document.getElementById(
+      "mensajeCita"
+    );
+
+    if (mensaje) {
+
+      mensaje.textContent =
+
+        "El perfil seleccionado ya no está " +
+
+        "disponible. Selecciona otro médico " +
+
+        "desde el directorio.";
+
+    }
+
+  }
+
+}
+
+
+/* ==========================================
+   CAMBIAR MÉDICO SELECCIONADO
+========================================== */
+
+function cambiarMedicoCita() {
+
+  medicoSeleccionadoCita = null;
+
+  location.hash = "#directorio";
+
+}
+
+
+/* ==========================================
+   CERRAR PERFIL PROFESIONAL
+========================================== */
+
+function cerrarPerfilMedicoDirectorio() {
+
+  const contenedor = document.getElementById(
+    "detalleMedicoDirectorio"
+  );
+
+  if (!contenedor) return;
+
+  contenedor.hidden = true;
+
+  contenedor.innerHTML = "";
+
+  delete contenedor.dataset.medicoId;
+
 }
 
 
@@ -2042,7 +4639,7 @@ const paginas = {
   vinculos,
   chat,
   farmacia,
-  perfil
+   perfil: perfilConDirectorio
 
 };
 
@@ -2709,6 +5306,280 @@ onAuthStateChanged(
 
 );
 
+/* ==========================================
+   EVENTOS DE LA AGENDA MÉDICA
+========================================== */
+
+
+/* EVENTOS DE CLIC */
+
+document.addEventListener("click", evento => {
+
+  if (!sesionLista) return;
+
+  if (
+    evento.target.closest(
+      "#consultarDisponibilidadCita"
+    )
+  ) {
+
+    consultarDisponibilidadCita();
+
+  }
+
+  if (
+    evento.target.closest("#actualizarCitas")
+  ) {
+
+    cargarCitas();
+
+  }
+
+  const boton = evento.target.closest(
+    "[data-estado-cita]"
+  );
+
+  if (boton) {
+
+    actualizarEstadoCita(
+
+      boton.dataset.cita,
+
+      boton.dataset.estadoCita,
+
+      boton
+
+    );
+
+  }
+
+});
+
+
+/* CAMBIOS DE FECHA Y FILTROS */
+
+document.addEventListener("change", evento => {
+
+  if (!sesionLista) return;
+
+  if (evento.target.id === "fechaCita") {
+
+    generarHorariosCita();
+
+  }
+
+  if (evento.target.id === "filtroCitas") {
+
+    cargarCitas();
+
+  }
+
+});
+
+
+/* INVALIDAR DISPONIBILIDAD AL CAMBIAR MÉDICO */
+
+document.addEventListener("input", evento => {
+
+  if (evento.target.id !== "medicoCita") return;
+
+  disponibilidadCita = null;
+
+  document.getElementById("fechaCita")
+    .disabled = true;
+
+  document.getElementById("horaCita")
+    .disabled = true;
+
+  document.getElementById("solicitarCita")
+    .disabled = true;
+
+  document.getElementById(
+    "resultadoDisponibilidadCita"
+  ).textContent = "";
+
+});
+
+
+/* REGISTRAR NUEVAS CITAS */
+
+document.addEventListener("submit", evento => {
+
+  if (evento.target.id === "formCita") {
+
+    guardarCita(evento);
+
+  }
+
+});
+
+/* ==========================================
+   EVENTOS DE CONSULTA DEL DIRECTORIO MÉDICO
+========================================== */
+
+document.addEventListener("click", evento => {
+
+  if (!sesionLista) return;
+
+
+  /* ACTUALIZAR DIRECTORIO */
+
+  if (
+    evento.target.closest(
+      "#actualizarDirectorio"
+    )
+  ) {
+
+    cerrarPerfilMedicoDirectorio();
+
+    cargarDirectorioMedico();
+
+  }
+
+
+  /* CONSULTAR PERFIL PROFESIONAL */
+
+  const botonMedico = evento.target.closest(
+    "[data-ver-medico]"
+  );
+
+  if (botonMedico) {
+
+    verPerfilMedicoDirectorio(
+
+      botonMedico.dataset.verMedico
+
+    );
+
+  }
+
+
+  /* CERRAR PERFIL PROFESIONAL */
+
+  if (
+    evento.target.closest(
+      "#cerrarPerfilDirectorio"
+    )
+  ) {
+
+    cerrarPerfilMedicoDirectorio();
+
+  }
+
+});
+
+/* ==========================================
+   EVENTOS DE BÚSQUEDA Y FILTROS
+   DIRECTORIO MÉDICO
+========================================== */
+
+
+/* BÚSQUEDA MIENTRAS EL USUARIO ESCRIBE */
+
+document.addEventListener("input", evento => {
+
+  if (!sesionLista) return;
+
+  if (
+    evento.target.id ===
+    "buscarMedicoDirectorio"
+  ) {
+
+    aplicarFiltrosDirectorio();
+
+  }
+
+});
+
+
+/* CAMBIOS DE ESPECIALIDAD Y ORDEN */
+
+document.addEventListener("change", evento => {
+
+  if (!sesionLista) return;
+
+  if (
+
+    evento.target.id ===
+      "filtroEspecialidadDirectorio"
+
+    || evento.target.id ===
+      "ordenDirectorio"
+
+  ) {
+
+    aplicarFiltrosDirectorio();
+
+  }
+
+});
+
+
+/* LIMPIAR BÚSQUEDA Y FILTROS */
+
+document.addEventListener("click", evento => {
+
+  if (!sesionLista) return;
+
+  if (
+
+    evento.target.closest(
+      "#limpiarFiltrosDirectorio"
+    )
+
+    || evento.target.closest(
+      "[data-limpiar-directorio]"
+    )
+
+  ) {
+
+    limpiarFiltrosDirectorio();
+
+  }
+
+});
+
+/* ==========================================
+   EVENTOS DE INTEGRACIÓN CON CITAS MÉDICAS
+========================================== */
+
+document.addEventListener("click", evento => {
+
+  if (!sesionLista) return;
+
+
+  /* SOLICITAR CITA DESDE EL DIRECTORIO */
+
+  const botonSolicitar = evento.target.closest(
+
+    "[data-solicitar-cita]"
+
+  );
+
+  if (botonSolicitar) {
+
+    solicitarCitaDesdeDirectorio(
+
+      botonSolicitar.dataset.solicitarCita
+
+    );
+
+  }
+
+
+  /* CAMBIAR MÉDICO SELECCIONADO */
+
+  if (
+    evento.target.closest(
+      "#cambiarMedicoCita"
+    )
+  ) {
+
+    cambiarMedicoCita();
+
+  }
+
+});
 
 /* SERVICE WORKER */
 

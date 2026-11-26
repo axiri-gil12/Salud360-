@@ -28,9 +28,18 @@ self.addEventListener('install', evento=>{
                 './js/app.js',
                 './js/firebase.js',
                 './js/auth.js',
-                './manifest.json'
+                './manifest.json',
+                './img/imagenes/icons/360_1.png',
+                './img/imagenes/icons/360_2.png', 
+                './img/imagenes/icons/360_3.png',
+                './img/imagenes/icons/360_4.png',
+                './img/imagenes/icons/360_5.png',
+                './img/imagenes/icons/360_6.png',
+                './img/imagenes/icons/360_7.png'
             ]);
         });
+
+        
 
         //Separamos los archivos que no se modificarán en un espacio de cache inmutable
         const cacheInmutable = caches.open(CACHE_INMUTABLE)

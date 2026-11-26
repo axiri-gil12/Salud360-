@@ -12,26 +12,37 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "./img/imagenes/icons/salud1.png",
-      "sizes": "any",
+      "src": "./img/imagenes/icons/360_1.png",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./img/imagenes/icons/salud2.png",
-      "sizes": "any",
+      "src": "./img/imagenes/icons/360_2.png",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./img/imagenes/icons/salud3.png",
-      "sizes": "any",
+      "src": "./img/imagenes/icons/360_3.png",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./img/imagenes/icons/salud4.png",
-      "sizes": "any",
+      "src": "./img/imagenes/icons/360_4.png",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./img/imagenes/icons/360_5.png",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./img/imagenes/icons/360_6.png",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./img/imagenes/icons/360_7.png",
       "type": "image/png",
       "purpose": "any"
     }
